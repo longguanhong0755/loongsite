@@ -111,6 +111,7 @@ function buildDocBlock() {
     ['动效位移', `full ${t.motion.tiers.full.dist1} / ${t.motion.tiers.full.dist2} / ${t.motion.tiers.full.dist3} · 轻量 ${t.motion.tiers.light.dist1} / ${t.motion.tiers.light.dist2} / ${t.motion.tiers.light.dist3}；错峰 ${t.motion.tiers.full.stagger} / ${t.motion.tiers.light.stagger}`],
     ['动效曲线', `${t.motion.ease.soft}（soft）· ${t.motion.ease.snap}（snap）`],
     ['光斑', `强度 full ${t.motion.gx.spotFull} · 轻量 ${t.motion.gx.spotLight} · 衰减半径 ${t.motion.gx.pool}px · 棱边接光带 ${t.motion.gx.rimBand}px`],
+    ['阅读进度', `pathLength ${t.motion.reading.pathLength} · 环线与目录指示条 ${t.motion.reading.stroke}px`],
     ['正文对比度', `≥ ${t.contrastMin}:1`]
   ];
   if (t.renderedContract.footerSticky) {

@@ -1,0 +1,214 @@
+[
+  {
+    "name": "E1 文章页回顶按钮带阅读环（轨道 + 进度圆）",
+    "pass": true,
+    "detail": {
+      "ring": true,
+      "hasRingClass": true,
+      "circles": 2,
+      "pathLengths": [
+        "100",
+        "100"
+      ],
+      "track": true,
+      "fill": true,
+      "onIndexPage": false
+    }
+  },
+  {
+    "name": "E2 页面顶部：进度 0，回顶按钮未出现",
+    "pass": true,
+    "detail": {
+      "hasRing": true,
+      "isOn": false,
+      "read": 0,
+      "expect": 0,
+      "offset": 100,
+      "rawOffset": "calc(100px)",
+      "dasharray": "100px",
+      "border": "rgba(0, 0, 0, 0)",
+      "sy": 0,
+      "vh": 900,
+      "scrollH": 4949
+    }
+  },
+  {
+    "name": "E3 进度环的边框让位给 SVG 轨道",
+    "pass": true,
+    "detail": {
+      "border": "rgba(0, 0, 0, 0)"
+    }
+  },
+  {
+    "name": "E4 滚过 320px：回顶按钮出现",
+    "pass": true,
+    "detail": {
+      "isOn": true
+    }
+  },
+  {
+    "name": "E5 滚动后进度在 0~1 之间且与文章位置一致",
+    "pass": true,
+    "detail": {
+      "hasRing": true,
+      "isOn": true,
+      "read": 0.116,
+      "expect": 0.11596361053343261,
+      "offset": 88.4,
+      "rawOffset": "calc(88.4px)",
+      "dasharray": "100px",
+      "border": "rgba(0, 0, 0, 0)",
+      "sy": 592,
+      "vh": 900,
+      "scrollH": 4941
+    }
+  },
+  {
+    "name": "E6 dashoffset = pathLength × (1 − 进度)",
+    "pass": true,
+    "detail": {
+      "dasharray": "100px",
+      "offset": 88.4,
+      "read": 0.116
+    }
+  },
+  {
+    "name": "E7 进度环线宽 2px",
+    "pass": true
+  },
+  {
+    "name": "E8 文章底部：进度收满 1",
+    "pass": true,
+    "detail": {
+      "hasRing": true,
+      "isOn": true,
+      "read": 1,
+      "expect": 1,
+      "offset": 0,
+      "rawOffset": "0%",
+      "dasharray": "100px",
+      "border": "rgba(0, 0, 0, 0)",
+      "sy": 4041,
+      "vh": 900,
+      "scrollH": 4941
+    }
+  },
+  {
+    "name": "E9 收满后 dashoffset 归零（容差 1）",
+    "pass": true,
+    "detail": {
+      "offset": 0
+    }
+  },
+  {
+    "name": "E10 非文章页不挂阅读环",
+    "pass": true
+  },
+  {
+    "name": "F1 桌面目录有指示条，首次定位已就绪",
+    "pass": true,
+    "detail": {
+      "active": null,
+      "hasActive": false,
+      "ready": true,
+      "y": "29px",
+      "h": "32px",
+      "linkY": null,
+      "linkH": null,
+      "opacity": "0",
+      "transition": "transform, height, opacity",
+      "clientH": 411,
+      "scrollH": 411,
+      "scrollTop": 0
+    }
+  },
+  {
+    "name": "F2 未进入正文时指示条隐藏",
+    "pass": true,
+    "detail": {
+      "opacity": "0"
+    }
+  },
+  {
+    "name": "F3 滚到第 3 节：目录高亮对应条目",
+    "pass": true,
+    "detail": {
+      "active": "#sec-3",
+      "hasActive": true,
+      "ready": true,
+      "y": "109px",
+      "h": "32px",
+      "linkY": 109,
+      "linkH": 32,
+      "opacity": "1",
+      "transition": "none",
+      "clientH": 411,
+      "scrollH": 411,
+      "scrollTop": 0
+    }
+  },
+  {
+    "name": "F4 指示条位置/高度 = 活动条目的 offsetTop/offsetHeight",
+    "pass": true,
+    "detail": {
+      "active": "#sec-3",
+      "hasActive": true,
+      "ready": true,
+      "y": "109px",
+      "h": "32px",
+      "linkY": 109,
+      "linkH": 32,
+      "opacity": "1",
+      "transition": "none",
+      "clientH": 411,
+      "scrollH": 411,
+      "scrollTop": 0
+    }
+  },
+  {
+    "name": "F5 指示条用 transform + height 过渡（平滑跟随）",
+    "pass": true,
+    "detail": {
+      "transition": "transform, height, opacity"
+    }
+  },
+  {
+    "name": "F6 继续下滚：高亮切换，指示条移到新位置",
+    "pass": true,
+    "detail": {
+      "before": 109,
+      "after": 276,
+      "active": "#sec-6"
+    }
+  },
+  {
+    "name": "F7 移动端目录默认收起且可见",
+    "pass": true,
+    "detail": {
+      "visible": true,
+      "open": false
+    }
+  },
+  {
+    "name": "F8 展开移动目录：指示条重新定位到当前小节",
+    "pass": true,
+    "detail": {
+      "active": "#sec-2",
+      "hasActive": true,
+      "ready": true,
+      "y": "48px",
+      "h": "32px",
+      "linkY": 48,
+      "linkH": 32,
+      "opacity": "1",
+      "transition": "none",
+      "clientH": 310,
+      "scrollH": 310,
+      "scrollTop": 0
+    }
+  },
+  {
+    "name": "F9 移动端无横向溢出",
+    "pass": true
+  }
+]

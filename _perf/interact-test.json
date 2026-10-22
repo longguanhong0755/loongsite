@@ -14,9 +14,9 @@
       "hot": true,
       "lit": true,
       "k": "1.000",
-      "rimK": "0.823",
+      "rimK": "0.818",
       "mx": "58.0px",
-      "my": "15.9px",
+      "my": "16.4px",
       "sibK": "0.086",
       "sibLit": true,
       "sibHot": false
@@ -34,7 +34,7 @@
     "pass": true,
     "detail": {
       "mx": "58.0px",
-      "my": "15.9px"
+      "my": "16.4px"
     }
   },
   {
@@ -78,7 +78,7 @@
     "name": "A10 棱边高光带（::before）有点亮",
     "pass": true,
     "detail": {
-      "rim": "0.997"
+      "rim": "0.996"
     }
   },
   {

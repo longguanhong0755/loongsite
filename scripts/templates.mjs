@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { TOKENS } from '../design.tokens.mjs';
 
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '..');
 
@@ -167,7 +168,7 @@ const ARRIVAL = `(function(){var d=document.documentElement;window.addEventListe
    目标元素在 body 里，head 脚本那时还拿不到它，但 CSS 选择器可以等它解析完再生效。 */
 const ROUTE = `(function(){var d=document.documentElement;try{var dir=sessionStorage.getItem('vt-dir');var morph=sessionStorage.getItem('vt-morph');sessionStorage.removeItem('vt-dir');sessionStorage.removeItem('vt-morph');if(dir)d.setAttribute('data-vt-dir',dir);if(morph){d.setAttribute('data-vt-morph',morph);var st=document.createElement('style');st.textContent='[data-morph="'+morph+'"]{view-transition-name:'+morph+';}';document.head.appendChild(st);}}catch(e){}})();`;
 
-export function layout({ profile, title, description, current = '/', path = '/', content, bodyClass = '' }) {
+export function layout({ profile, title, description, current = '/', path = '/', content, bodyClass = '', readRing = false }) {
   const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name} · ${profile.title}`;
   const desc = description || profile.description;
   const navLinks = NAV.map((n) => {
@@ -234,7 +235,14 @@ ${content}
     </div>
   </div>
 </footer>
-<button class="to-top" type="button" data-to-top aria-label="回到顶部">${icon('arrowUp', 16)}</button>
+<button class="to-top${readRing ? ' has-ring' : ''}" type="button" data-to-top aria-label="回到顶部"${readRing ? ' data-read-ring' : ''}>${
+  readRing
+    ? `<svg class="read-ring" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+        <circle class="read-ring-track" cx="20" cy="20" r="18.5" pathLength="${TOKENS.motion.reading.pathLength}" />
+        <circle class="read-ring-fill" cx="20" cy="20" r="18.5" pathLength="${TOKENS.motion.reading.pathLength}" />
+      </svg>`
+    : ''
+}${icon('arrowUp', 16)}</button>
 <div class="toast" role="status" aria-live="polite" data-toast>${icon('check', 15)}<span data-toast-text></span></div>
 <script src="/assets/js/main.js?v=${JS_V}" defer></script>
 </body>

@@ -1725,7 +1725,36 @@ pre.code .line:hover { background: var(--panel-inset); }
 .post-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
 .post-layout.has-toc { grid-template-columns: 200px minmax(0, 1fr); }
 .post-aside { position: sticky; top: 88px; }
-.toc { display: grid; gap: 8px; align-content: start; }
+/* 目录：活动条目不再只换边框色，而是一条会滑动的指示条。
+   JS 只写活动条的位置/高度（--toc-y / --toc-h），滑动与淡入交给 CSS；
+   首次定位时 .is-ready 还没加上，不播放入场滑动。目录过长时自身滚动，
+   活动条目始终留在可视范围内。 */
+.toc {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  max-height: calc(100vh - 88px - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.toc-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: var(--toc-h, 0px);
+  border-radius: 2px;
+  background: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(var(--toc-y, 0px));
+}
+.toc.is-ready .toc-indicator {
+  transition: transform var(--m-dur-2) var(--ease-soft), height var(--m-dur-2) var(--ease-soft), opacity var(--m-dur-2) var(--ease-soft);
+}
+.toc.has-active .toc-indicator { opacity: 1; }
 .toc-title {
   font-family: var(--mono);
   font-size: 12px;
@@ -1743,7 +1772,7 @@ pre.code .line:hover { background: var(--panel-inset); }
   transition: color var(--dur-1) var(--ease-soft), border-color var(--dur-1) var(--ease-soft);
 }
 .toc-link:hover { color: var(--text); border-color: var(--line-strong); }
-.toc-link.is-active { color: var(--text); border-color: var(--text); }
+.toc-link.is-active { color: var(--text); border-color: transparent; }
 .toc-l3 { padding-left: 24px; }
 .toc-mobile {
   display: none;
@@ -1774,6 +1803,7 @@ pre.code .line:hover { background: var(--panel-inset); }
 .toc-mobile[open] .toc-sum .ic { transform: rotate(90deg); }
 .toc-inline { padding: 12px 16px 16px; gap: 4px; }
 .toc-inline .toc-title { display: none; }
+.toc-inline .toc-indicator { left: 16px; }
 .post-pager { margin-top: 32px; }
 .post-pager .pager-item:only-child { grid-column: 1 / -1; }
 @media (max-width: 1100px) {
@@ -1881,6 +1911,30 @@ html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
 }
 .to-top.is-on { visibility: visible; opacity: 1; transform: none; transition-delay: 0s; }
 .to-top:hover { color: var(--text); border-color: var(--line-strong); }
+
+/* 文章页：回顶按钮的边框就是阅读进度环。pathLength 归一化为 100，
+   JS 只写 --read（0~1），dashoffset 由 CSS 算；无 JS 时是一圈静止的轨道。 */
+.to-top.has-ring,
+.to-top.has-ring:hover { border-color: transparent; }
+.read-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  overflow: visible;
+}
+.read-ring circle { fill: none; stroke-width: 2; }
+.read-ring-track { stroke: var(--line); transition: stroke var(--dur-1) var(--ease-soft); }
+.to-top.has-ring:hover .read-ring-track { stroke: var(--line-strong); }
+.read-ring-fill {
+  stroke: var(--text);
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 * (1 - var(--read, 0)));
+  transition: stroke-dashoffset var(--m-dur-1) linear;
+}
 
 .toast {
   position: fixed;

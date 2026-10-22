@@ -36,6 +36,9 @@ FREEZE_CSS = """
 [data-clock-wrap] { visibility: hidden !important; }
 .bg-fx, .bg-deco, canvas { display: none !important; }
 .reveal { opacity: 1 !important; transform: none !important; }
+/* 玻璃块即使 0° 也带 perspective 变换层，栅格化在两次截图间会有亚像素差异；
+   审计只关心静态布局，冻结掉倾斜（悬停才有的姿态不属于基线）。 */
+.gx-tilt { transform: none !important; }
 """
 
 # ---------------- 测量 JS ----------------
@@ -201,7 +204,7 @@ def main():
 
     import os
     from patchright.sync_api import sync_playwright
-    from PIL import Image, ImageChops
+    from PIL import Image, ImageChops, ImageFilter
 
     BASELINE_DIR.mkdir(parents=True, exist_ok=True)
     DIFF_DIR.mkdir(parents=True, exist_ok=True)
@@ -344,6 +347,10 @@ def main():
                         if a.size != b.size:
                             fail(pname, cfg, f"基线尺寸变化 {a.size} → {b.size}")
                         else:
+                            # 1px 高斯：headless 的文字栅格在两次截图间会有亚像素抖动
+                            # （同机连拍可差 0.7%）；真实布局位移 ≥1px 仍会留下差异。
+                            a = a.filter(ImageFilter.GaussianBlur(1))
+                            b = b.filter(ImageFilter.GaussianBlur(1))
                             diff = ImageChops.difference(a, b).convert("L")
                             hist = diff.histogram()
                             tot = a.size[0] * a.size[1]

@@ -1,0 +1,88 @@
+[
+  {
+    "name": "G1 无 JS：正文与标题完整可见（未被入场动画藏起来）",
+    "pass": true,
+    "detail": {
+      "jsClass": false,
+      "artVisible": true,
+      "text": "10 月 15 日晚上，本站刚在这台自有服务器上",
+      "textVisible": true,
+      "heading": true,
+      "tocLinks": 16,
+      "revealOpacity": "1",
+      "overflow": -10,
+      "toTop": "hidden"
+    }
+  },
+  {
+    "name": "G2 无 JS：目录链接仍在，无横向溢出",
+    "pass": true,
+    "detail": {
+      "tocLinks": 16,
+      "overflow": -10
+    }
+  },
+  {
+    "name": "G3 无 JS：未注入 js 类，回顶按钮保持隐藏",
+    "pass": true,
+    "detail": {
+      "jsClass": false,
+      "artVisible": true,
+      "text": "10 月 15 日晚上，本站刚在这台自有服务器上",
+      "textVisible": true,
+      "heading": true,
+      "tocLinks": 16,
+      "revealOpacity": "1",
+      "overflow": -10,
+      "toTop": "hidden"
+    }
+  },
+  {
+    "name": "G4 减动效：落到轻量档，平滑滚动关闭",
+    "pass": true,
+    "detail": {
+      "motion": "light",
+      "scrollBehavior": "auto",
+      "ring": true,
+      "read": "0.0000",
+      "toc": true
+    }
+  },
+  {
+    "name": "G5 减动效：阅读环与目录指示条仍在",
+    "pass": true,
+    "detail": {
+      "motion": "light",
+      "scrollBehavior": "auto",
+      "ring": true,
+      "read": "0.0000",
+      "toc": true
+    }
+  },
+  {
+    "name": "G6 减动效：滚动仍驱动进度与目录高亮",
+    "pass": true,
+    "detail": {
+      "read": 0.5062,
+      "active": "#sec-4"
+    }
+  },
+  {
+    "name": "G7 轻量档：令牌按 light 生效",
+    "pass": true,
+    "detail": {
+      "motion": "light",
+      "ring": true,
+      "dur": "0.14s"
+    }
+  },
+  {
+    "name": "G8 触屏：不误触发悬停光斑",
+    "pass": true,
+    "detail": {
+      "gxOn": false,
+      "lit": 0,
+      "hot": 0
+    }
+  }
+]

@@ -521,6 +521,7 @@
   var bar = document.querySelector('[data-progress]');
   var navWrap = document.querySelector('.nav-wrap');
   var toTop = document.querySelector('[data-to-top]');
+  var readRing = document.querySelector('[data-read-ring]');
 
   function onScrollNow() {
     var doc = document.documentElement;
@@ -532,7 +533,8 @@
       if (show) bar.firstElementChild.style.transform = 'scaleX(' + Math.min(1, Math.max(0, sy / max)).toFixed(4) + ')';
     }
     if (navWrap) navWrap.classList.toggle('is-scrolled', sy > 10);
-    if (toTop) toTop.classList.toggle('is-on', sy > 900);
+    /* 文章页的回顶按钮兼作阅读进度环，出现得早一些才有意义 */
+    if (toTop) toTop.classList.toggle('is-on', sy > (readRing ? 320 : 900));
   }
 
   function onScroll() {
@@ -585,13 +587,79 @@
     update();
   })();
 
-  /* ---------- 文章目录：随滚动高亮当前小节 ---------- */
+  /* ---------- 博客阅读进度环 ----------
+     只算文章正文卡片自身的阅读比例：卡片顶进视口为 0，卡片底离开视口为 1。
+     JS 只写 --read（0~1），dashoffset 由 CSS 按 pathLength 算。 */
+  var postArticle = document.querySelector('.post-article');
+  if (readRing && postArticle) {
+    var lastRead = '';
+    var updateRead = function () {
+      var sy = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var vh = window.innerHeight || 1;
+      var r = postArticle.getBoundingClientRect();
+      var start = r.top + sy;
+      var span = r.height - vh;
+      var p = span > 0 ? (sy - start) / span : (sy >= start ? 1 : 0);
+      if (p < 0) p = 0; else if (p > 1) p = 1;
+      var v = p.toFixed(4);
+      if (v !== lastRead) {
+        lastRead = v;
+        readRing.style.setProperty('--read', v);
+      }
+    };
+    var readOnScroll = function () { Motion.frame('read', updateRead); };
+    window.addEventListener('scroll', readOnScroll, { passive: true });
+    window.addEventListener('resize', readOnScroll);
+    updateRead();
+  }
+
+  /* ---------- 文章目录：随滚动高亮当前小节 + 指示条平滑跟随 ----------
+     活动条的位置来自条目在目录内的 offsetTop/offsetHeight（JS 只写这两个测量值），
+     平移、高度变化、淡入全部由 CSS 令牌控制。目录自身过长时，活动条目保持在可视区内。 */
+  var tocHosts = [].slice.call(document.querySelectorAll('[data-toc]'));
   var tocLinks = [].slice.call(document.querySelectorAll('[data-toc] a[href^="#"]'));
   if (tocLinks.length) {
     var pageTop = function () { return window.pageYOffset || document.documentElement.scrollTop || 0; };
     var tocItems = tocLinks.map(function (a) {
       return { a: a, el: document.getElementById(a.getAttribute('href').slice(1)) };
     }).filter(function (it) { return it.el; });
+    var smoothTocScroll = function (host, top) {
+      if (reduced()) { host.scrollTop = top; return; }
+      try { host.scrollTo({ top: top, behavior: 'smooth' }); }
+      catch (e) { host.scrollTop = top; }
+    };
+    /* 目录条目的 offsetTop/offsetHeight 只在尺寸变化时量一次，滚动帧里不再读布局 */
+    var measureToc = function () {
+      for (var k = 0; k < tocHosts.length; k++) {
+        var links = tocHosts[k].querySelectorAll('.toc-link');
+        for (var n = 0; n < links.length; n++) {
+          links[n].__tocTop = links[n].offsetTop;
+          links[n].__tocH = links[n].offsetHeight;
+        }
+      }
+    };
+    var placeIndicator = function (host) {
+      var ind = host.querySelector('.toc-indicator');
+      if (!ind) return;
+      var link = host.querySelector('.toc-link.is-active');
+      var posLink = link || host.querySelector('.toc-link');
+      if (!posLink) return;
+      var top = posLink.__tocTop || 0;
+      var h = posLink.__tocH || 0;
+      var yv = top + 'px';
+      var hv = h + 'px';
+      if (ind.__y !== yv) { ind.__y = yv; ind.style.setProperty('--toc-y', yv); }
+      if (ind.__h !== hv) { ind.__h = hv; ind.style.setProperty('--toc-h', hv); }
+      host.classList.toggle('has-active', !!link);
+      /* 目录比视口高时，把活动条目滚进可视区（只动目录自身，不动页面） */
+      if (link && host.scrollHeight > host.clientHeight + 1) {
+        var viewTop = host.scrollTop;
+        var viewBottom = viewTop + host.clientHeight;
+        if (top < viewTop + 4) smoothTocScroll(host, Math.max(0, top - 4));
+        else if (top + h > viewBottom - 4) smoothTocScroll(host, top + h - host.clientHeight + 4);
+      }
+    };
+    var lastActiveHref = null;
     var syncToc = function () {
       var y = pageTop() + 120;
       var active = null;
@@ -599,16 +667,41 @@
         if (tocItems[i].el.getBoundingClientRect().top + pageTop() <= y) active = tocItems[i];
       }
       var activeHref = active ? active.a.getAttribute('href') : '';
-      for (var j = 0; j < tocItems.length; j++) {
-        tocItems[j].a.classList.toggle('is-active', tocItems[j].a.getAttribute('href') === activeHref);
+      /* 只在切换时改类，避免滚动帧里制造无谓的样式失效 */
+      if (activeHref !== lastActiveHref) {
+        lastActiveHref = activeHref;
+        for (var j = 0; j < tocItems.length; j++) {
+          tocItems[j].a.classList.toggle('is-active', tocItems[j].a.getAttribute('href') === activeHref);
+        }
       }
+      for (var k = 0; k < tocHosts.length; k++) placeIndicator(tocHosts[k]);
     };
     var tocOnScroll = function () {
       Motion.frame('toc', syncToc);
     };
+    var refreshToc = function () { measureToc(); syncToc(); };
     window.addEventListener('scroll', tocOnScroll, { passive: true });
-    window.addEventListener('resize', tocOnScroll);
+    window.addEventListener('resize', refreshToc);
+    window.addEventListener('load', refreshToc);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshToc);
+    /* 移动端目录默认收起，展开的那一刻布局才有尺寸；重新定位并避免长距离滑入 */
+    [].forEach.call(document.querySelectorAll('.toc-mobile'), function (details) {
+      details.addEventListener('toggle', function () {
+        if (!details.open) return;
+        var host = details.querySelector('[data-toc]');
+        if (!host) return;
+        host.classList.remove('is-ready');
+        measureToc();
+        syncToc();
+        void host.offsetHeight;
+        window.requestAnimationFrame(function () { host.classList.add('is-ready'); });
+      });
+    });
+    measureToc();
     syncToc();
+    window.setTimeout(function () {
+      for (var t = 0; t < tocHosts.length; t++) tocHosts[t].classList.add('is-ready');
+    }, 0);
   }
 
   if (toTop) {

@@ -102,6 +102,11 @@
       "spotLight": "0.7",
       "_spotNote": "spotFull / spotLight 就是 tiers 里的 spot，这里只写一份含义：完整档满强度，轻量档收力到 0.7"
     },
+    "reading": {
+      "_note": "博客阅读进度环：SVG pathLength 归一化为 pathLength，CSS 用 --read（0~1）算 dashoffset，不再维护第二个周长常数。环与回顶按钮同尺寸（40px）、线宽 stroke；目录活动指示条与 TOC 左边框同宽，只平移不改块色。",
+      "pathLength": 100,
+      "stroke": "2"
+    },
     "tiers": {
       "full": {
         "dur1": "0.16s",
@@ -274,6 +279,17 @@
     },
     ".ic-ok": {
       "animation": "ok-pop var(--m-dur-2) var(--ease-snap)"
+    },
+    ".read-ring circle": {
+      "stroke-width": "2"
+    },
+    ".read-ring-fill": {
+      "stroke-dasharray": "100",
+      "stroke-dashoffset": "calc(100 * (1 - var(--read, 0)))"
+    },
+    ".toc-indicator": {
+      "width": "2px",
+      "border-radius": "2px"
     }
   },
   "_sourceContractNote": "check-design.mjs 逐条断言这些选择器的声明值；改契约数值 = 改这里 + 改 CSS（两边必须一致）",

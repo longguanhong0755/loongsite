@@ -926,6 +926,7 @@ function postBodyHtml(md) {
 
 function renderToc(heads, extra = '') {
   return `<nav class="toc${extra ? ' ' + extra : ''}" aria-label="文章目录" data-toc>
+        <span class="toc-indicator" aria-hidden="true"></span>
         <div class="toc-title">ON THIS PAGE</div>
 ${heads.map((h) => `<a class="toc-link toc-l${h.level}" href="#${h.id}">${esc(h.text)}</a>`).join('\n')}
       </nav>`;
@@ -997,7 +998,7 @@ ${body}
         </div>
       </div>
     </section>`;
-    write(`blog/${p.slug}.html`, layout({ profile, title: p.fm.title || p.slug, description: p.fm.summary || '', current: '/blog/', path: `/blog/${p.slug}`, content: c }));
+    write(`blog/${p.slug}.html`, layout({ profile, title: p.fm.title || p.slug, description: p.fm.summary || '', current: '/blog/', path: `/blog/${p.slug}`, content: c, readRing: true }));
   });
   return posts.length;
 }
