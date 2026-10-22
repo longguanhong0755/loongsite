@@ -1,0 +1,24 @@
+{
+  "name": "loongsite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "loong 的个人网站：简历 / 作品集 / 博客（纯静态，站点零外部依赖）",
+  "scripts": {
+    "sync": "node scripts/sync-github.mjs",
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "check": "node scripts/check-design.mjs && stylelint assets/css/style.css",
+    "design:sync": "node scripts/check-design.mjs --write",
+    "audit": "python scripts/audit-design.py",
+    "baseline": "python scripts/audit-design.py --baseline",
+    "verify": "npm run build && npm run check && npm run audit",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:cf": "bash scripts/deploy-cf.sh"
+  },
+  "devDependencies": {
+    "marked": "^15.0.7",
+    "postcss": "^8.5.30",
+    "stylelint": "^17.16.0"
+  }
+}

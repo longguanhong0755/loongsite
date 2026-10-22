@@ -1,0 +1,66 @@
+{
+  "name": "loong",
+  "title": "全栈开发 · AI 应用",
+  "tagline": "把想法做成能跑起来的东西。",
+  "avatar": "/assets/img/avatar-512.jpg",
+  "avatarSmall": "/assets/img/avatar-256.jpg",
+  "siteName": "loong",
+  "siteUrl": "https://loongsite.com",
+  "description": "loong 的个人网站：做过的项目、写过的代码，以及正在折腾的东西。",
+  "contacts": [
+    { "type": "email", "group": "mail", "label": "1820100714@qq.com", "href": "mailto:1820100714@qq.com", "icon": "qq" },
+    { "type": "email", "group": "mail", "label": "looooong0755@gmail.com", "href": "mailto:looooong0755@gmail.com", "icon": "gmail" },
+    { "type": "github", "group": "social", "label": "longguanhong0755", "href": "https://github.com/longguanhong0755" },
+    { "type": "link", "group": "social", "label": "洛谷", "href": "https://www.luogu.com.cn/user/646928", "icon": "luogu" },
+    { "type": "link", "group": "social", "label": "linux.do", "href": "https://linux.do/u/looooong/summary", "icon": "linuxdo" },
+    { "type": "link", "group": "social", "label": "LD士多", "href": "https://ldcstore.com/merchant/looooong", "icon": "ldcstore" }
+  ],
+  "sites": [
+    {
+      "name": "LoongAPI",
+      "subtitle": "AI 模型 API 中转站",
+      "desc": "自建的模型网关：一个地址接入多家大模型，提供 OpenAI 兼容接口，长期在线。",
+      "href": "https://loongapi.xyz/",
+      "icon": "zap"
+    },
+    {
+      "name": "GuessWord",
+      "subtitle": "多语言语义猜词游戏",
+      "desc": "猜词游戏的线上版：六种语言、十二万词，系统只告诉你猜的词离谜底有多近。",
+      "href": "https://guessword.loongsite.com/",
+      "icon": "sparkles"
+    },
+    {
+      "name": "UI Components",
+      "subtitle": "650+ 开源 React 组件库",
+      "desc": "动画、Canvas、3D、文字与背景特效组件，在线预览、调参、复制即用，源码同步在 GitHub。",
+      "href": "https://ui.loongsite.com/",
+      "icon": "grid"
+    },
+    {
+      "name": "image2strokes",
+      "subtitle": "图片转逐笔绘画过程",
+      "desc": "丢一张图进去，看它被一笔一笔画出来：每一笔都是纯色，提炼全程在浏览器里完成，可导出视频、笔触脚本和成品图。",
+      "href": "https://image2strokes.loongsite.com/",
+      "icon": "layers"
+    }
+  ],
+  "games": [
+    { "name": "原神", "uid": "339281633", "icon": "/assets/img/games/genshin.png" },
+    { "name": "崩坏：星穹铁道", "uid": "168441550", "icon": "/assets/img/games/starrail.png" },
+    { "name": "异环", "uid": "219002418034", "icon": "/assets/img/games/nte.png" }
+  ],
+  "about": [
+    "我写 Web 和桌面应用，习惯把一件事从想法做到上线：架构、前端、后端、部署，尽量都由自己完成。",
+    "最近的作品集中在 AI 应用方向：一个多语言的语义猜词游戏、一个把洛谷搬进桌面的编程工作台、一套面向企业教练场景的多智能体平台，以及一个让 Agent 反向竞标的任务市场；另外把 650+ 动画与特效组件整理成了一个开源的 React 组件库。",
+    "我比较在意那些「看不见的细节」：排名结果的一致性、界面上的留白与手感、部署的稳定性——这些东西才决定了一个产品好不好用。"
+  ],
+  "skills": [
+    { "group": "前端 / 桌面", "items": ["JavaScript", "TypeScript", "Electron", "Next.js", "React", "Tailwind CSS", "手写 CSS / SVG"] },
+    { "group": "后端 / 数据", "items": ["Node.js", "Python", "PostgreSQL", "pgvector", "SQLite", "OpenAI 兼容接口"] },
+    { "group": "AI / 检索", "items": ["嵌入向量与语义相似度", "多语言词表与数据管线", "LLM 应用集成", "多智能体编排"] },
+    { "group": "部署 / 工程", "items": ["Cloudflare Pages / Functions", "Linux + Nginx", "PM2", "Vitest", "Git"] }
+  ],
+  "experience": [],
+  "education": []
+}
