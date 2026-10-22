@@ -247,6 +247,24 @@
         "before": "/",
         "after": "/"
       }
+    },
+    {
+      "name": "到达：确实走 View Transition",
+      "pass": true,
+      "detail": true
+    },
+    {
+      "name": "到达：首屏块没有二次位移（translate 保持 0）",
+      "pass": true,
+      "detail": [
+        "none",
+        "none"
+      ]
+    },
+    {
+      "name": "到达：html 不再挂 vt-arrive / vt-settle",
+      "pass": true,
+      "detail": "js vt-active"
     }
   ]
 }

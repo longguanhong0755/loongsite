@@ -7,8 +7,8 @@ npm run serve     # http://127.0.0.1:8090
 ```
 
 ```bash
-npm run test:tier       # P0 分级            26 条
-npm run test:route      # P1 跨页过渡        27 条
+npm run test:tier       # P0 分级            27 条
+npm run test:route      # P1 跨页过渡        30 条
 npm run test:depth      # P2 首屏/视差       27 条
 npm run test:interact   # P3 GX/微交互       35 条
 npm run test:blog       # P4 阅读环/目录     19 条

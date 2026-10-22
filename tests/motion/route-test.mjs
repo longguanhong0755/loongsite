@@ -223,6 +223,31 @@ async function run() {
     const after = await ev(cdp, sessionId, 'location.pathname');
     check('拖到空白处松手：不跳转', after === '/', { before: miss.path, after });
 
+    /* ---------- 9. 真实跨页到达：只允许整页一层运动 ---------- */
+    await go(cdp, sessionId, BASE + '/projects/?motion=full');
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `window.__arrival = null;
+        window.addEventListener('pagereveal', function (e) {
+          if (!e || !e.viewTransition) return;
+          setTimeout(function () {
+            var blocks = [].slice.call(document.querySelectorAll('.reveal.is-in'));
+            window.__arrival = {
+              hasVT: true,
+              cls: document.documentElement.className,
+              translates: blocks.slice(0, 6).map(function (el) { return getComputedStyle(el).translate; })
+            };
+          }, 0);
+        }, { once: true });`
+    }, sessionId);
+    const arrived = new Promise((res) => cdp.on('Page.loadEventFired', res));
+    await ev(cdp, sessionId, `document.querySelector('.nav-link[href="/blog/"]').click()`);
+    await Promise.race([arrived, sleep(15000)]);
+    await sleep(400);
+    const arrival = await ev(cdp, sessionId, 'window.__arrival');
+    check('到达：确实走 View Transition', arrival && arrival.hasVT, arrival && arrival.hasVT);
+    check('到达：首屏块没有二次位移（translate 保持 0）', arrival && arrival.translates.length > 0 && arrival.translates.every((t) => t === 'none' || t === '0px'), arrival && arrival.translates);
+    check('到达：html 不再挂 vt-arrive / vt-settle', arrival && !/vt-(arrive|settle)/.test(arrival.cls), arrival && arrival.cls);
+
     const out = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', '_perf');
     fs.mkdirSync(out, { recursive: true });
     fs.writeFileSync(path.join(out, 'route-test.json'), JSON.stringify({ results }, null, 2));

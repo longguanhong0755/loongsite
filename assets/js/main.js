@@ -712,20 +712,11 @@
   }
 
   /* 跨页过渡激活时打标记：入场编排据此跳过，避免与过渡动画打架。
-     到达时整页从上方落位，落位结束后再让首屏块错峰浮上来。 */
+     到达位移只由 root 快照那一次完成；首屏块已由 head 内联脚本标记为就位，
+     不能再叠加第二段 translate，否则落位后会再抽一下。 */
   window.addEventListener('pagereveal', function (e) {
     if (!e || !e.viewTransition) return;
-    root.classList.add('vt-active', 'vt-arrive');
-    var blocks = document.querySelectorAll('.reveal.is-in.no-rise');
-    for (var b = 0; b < blocks.length; b++) {
-      blocks[b].style.setProperty('--rise-i', String(b));
-    }
-    var settle = function () { root.classList.add('vt-settle'); };
-    if (e.viewTransition.finished && e.viewTransition.finished.then) {
-      e.viewTransition.finished.then(settle, settle);
-    } else {
-      window.setTimeout(settle, 500);
-    }
+    root.classList.add('vt-active');
   });
 
   /* ---------- 数字滚动（首屏统计 / 项目指标） ---------- */

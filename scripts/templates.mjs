@@ -156,10 +156,10 @@ const NO_FLASH = `(function(){var d=document.documentElement;d.classList.add('js
 const MOTION = `(function(){var d=document.documentElement,t='full';try{var q=(location.search.match(/[?&]motion=(full|light)/)||[])[1];if(q){t=q;try{localStorage.setItem('motion',q);}catch(e){}}else{var s=null;try{s=localStorage.getItem('motion');}catch(e){}if(s==='full'||s==='light'){t=s;}else if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){t='light';}else{var n=navigator,c=n.connection||{};var weak=!!c.saveData||/^(slow-2g|2g)$/.test(c.effectiveType||'')||!!(n.hardwareConcurrency&&n.hardwareConcurrency<=2)||!!(n.deviceMemory&&n.deviceMemory<=2);if(weak){t='light';}}}}catch(e){t='full';}d.setAttribute('data-motion',t);})();`;
 
 /* 到达编排必须在内联脚本里注册：defer 的 main.js 可能晚于跨页快照执行，
-   那样 pagereveal 里的首屏标记会错过首帧，快照就是空白。这里只做首屏块的
-   就位/错峰和落位后的上浮，其余交互仍由 main.js 接管。
-   只写序号 --rise-i，错峰步长交给令牌（--m-stagger）。 */
-const ARRIVAL = `(function(){var d=document.documentElement;window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition)return;d.classList.add('vt-active','vt-arrive');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal'),n=0;for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');el.style.setProperty('--rise-i',String(n));n++;}}var settle=function(){d.classList.add('vt-settle');};var vt=e.viewTransition;if(vt.finished&&vt.finished.then){vt.finished.then(settle,settle);}else{setTimeout(settle,500);}},{once:true});})();`;
+   那样 pagereveal 里的首屏标记会错过首帧，快照就是空白。这里只负责把首屏块
+   标成"已就位、不重放入场"；整页位移只由 ::view-transition-new(root) 完成，
+   不要再给块写 translate/序号——两段方向相反的位移会抽搐。 */
+const ARRIVAL = `(function(){var d=document.documentElement;window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition)return;d.classList.add('vt-active');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal');for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');}}},{once:true});})();`;
 
 /* 关系化过渡的交接：旧页面点击时把"这次要做什么过渡"写进 sessionStorage，
    新页面在首绘前读出来写进 <html> 的 data-vt-dir / data-vt-morph，CSS 再据此选过渡。

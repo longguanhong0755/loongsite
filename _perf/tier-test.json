@@ -15,8 +15,8 @@
     "apiStagger": 0.028,
     "apiParallax": 1,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "riseIndex": "",
-    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
+    "arrivalRule": ""
   },
   "light": {
     "tier": "light",
@@ -34,8 +34,8 @@
     "apiStagger": 0.016,
     "apiParallax": 0,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "riseIndex": "",
-    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
+    "arrivalRule": ""
   },
   "forced": {
     "tier": "full",
@@ -53,8 +53,8 @@
     "apiStagger": 0.028,
     "apiParallax": 1,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "riseIndex": "",
-    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
+    "arrivalRule": ""
   },
   "explicitLight": {
     "tier": "light",
@@ -72,8 +72,8 @@
     "apiStagger": 0.016,
     "apiParallax": 0,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "riseIndex": "",
-    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
+    "arrivalRule": ""
   },
   "results": [
     {
@@ -150,9 +150,14 @@
       "detail": "translateY(var(--m-dist-2))"
     },
     {
-      "name": "到达上浮用 calc(序号 * var(--m-stagger))",
+      "name": "到达只有整页一层运动（无首屏块二次位移）",
       "pass": true,
-      "detail": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behav"
+      "detail": ""
+    },
+    {
+      "name": "整页落位走 --m-dur-2 / --m-dist-2",
+      "pass": true,
+      "detail": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-v"
     },
     {
       "name": "减动效：档位 = light",

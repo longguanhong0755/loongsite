@@ -1849,15 +1849,10 @@ html.js .reveal.is-in {
 html.js .reveal.is-in.no-rise { animation: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(var(--m-dist-2)); } }
 
-/* 跨页到达：整页从上方落位时，首屏块先在略低处（快照里保持可见，不会空白），
-   落位结束后再浮上来。用独立的 translate 属性，避免覆盖卡片自身的倾斜 transform。
-   JS 只给块写序号 --rise-i，错峰时长由令牌算出（轻量档自动变短） */
-html.js.vt-arrive .reveal.is-in.no-rise { translate: 0 var(--m-dist-2); }
-html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
-  translate: 0 0;
-  transition: translate var(--m-dur-3) var(--ease-soft);
-  transition-delay: calc(var(--rise-i, 0) * var(--m-stagger));
-}
+/* 跨页到达只做一层整页运动：首屏块在快照里必须已经在最终位置。
+   以前这里先把块下移 --m-dist-2、落位结束后再上浮，和 root 快照的下落叠加成
+   "下—再下—回弹"，看起来就是抽搐；现在块只标记 is-in/no-rise（保证快照不空白、
+   不重放入场），位移全部交给 ::view-transition-new(root)。 */
 
 .grid > .reveal:nth-child(2), .skill-groups > .reveal:nth-child(2), .post-list > .reveal:nth-child(2) { --d: calc(var(--m-stagger) * 2); }
 .grid > .reveal:nth-child(3), .skill-groups > .reveal:nth-child(3), .post-list > .reveal:nth-child(3) { --d: calc(var(--m-stagger) * 4); }
@@ -1992,9 +1987,9 @@ html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
 @keyframes vt-new { from { opacity: 0; } }
 
 /* 只给 root 加下滑：共享标题与固定导航有自己的组动画，不能跟着整页位移。
-   20px 的落差 + 淡入，落位后首屏块再由 JS 触发的 translate 过渡浮上来 */
-::view-transition-new(root) { animation: vt-page 0.34s var(--ease-soft) both; }
-@keyframes vt-page { from { opacity: 0; transform: translateY(-20px); } }
+   一次落位 + 淡入就是全部到达运动；不再追加首屏块的第二段位移 */
+::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; }
+@keyframes vt-page { from { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); } }
 
 /* 导航栏不参与淡化。与上面同特异度，必须写在后面才压得住 */
 ::view-transition-group(site-nav),

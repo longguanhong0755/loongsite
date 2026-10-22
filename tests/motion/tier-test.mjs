@@ -66,9 +66,20 @@ const PROBE = `(() => {
       }
       return out;
     })(),
-    riseIndex: (function () {
-      var el = document.querySelector('.reveal');
-      return el ? el.style.getPropertyValue('--rise-i') : null;
+    rootTransition: (function () {
+      var out = '';
+      for (var i = 0; i < document.styleSheets.length; i++) {
+        var sheet = document.styleSheets[i];
+        var rules;
+        try { rules = sheet.cssRules; } catch (e) { continue; }
+        for (var j = 0; j < rules.length; j++) {
+          var r = rules[j];
+          var sel = r.selectorText || '';
+          if (sel.indexOf('::view-transition-new(root)') >= 0) out += r.cssText + ' | ';
+          if (r.type === CSSRule.KEYFRAMES_RULE && r.name === 'vt-page') out += r.cssText + ' | ';
+        }
+      }
+      return out;
     })(),
     arrivalRule: (function () {
       var out = '';
@@ -78,7 +89,7 @@ const PROBE = `(() => {
         try { rules = sheet.cssRules; } catch (e) { continue; }
         for (var j = 0; j < rules.length; j++) {
           var sel = rules[j].selectorText || '';
-          if (sel.indexOf('vt-settle') >= 0) out += rules[j].cssText + ' | ';
+          if (sel.indexOf('vt-settle') >= 0 || sel.indexOf('vt-arrive') >= 0) out += rules[j].cssText + ' | ';
         }
       }
       return out;
@@ -148,7 +159,8 @@ async function run() {
     check('LSMotion.stagger() = 0.028', Math.abs(full.apiStagger - 0.028) < 1e-6, full.apiStagger);
     check('LSMotion.parallax() = 1', full.apiParallax === 1, full.apiParallax);
     check('浮现位移走令牌 var(--m-dist-2)', /var\(--m-dist-2\)|translateY\(16px\)/.test(full.riseKeyframes || ''), full.riseKeyframes);
-    check('到达上浮用 calc(序号 * var(--m-stagger))', /--rise-i/.test(full.arrivalRule || '') && /--m-stagger/.test(full.arrivalRule || ''), (full.arrivalRule || '').slice(0, 160));
+    check('到达只有整页一层运动（无首屏块二次位移）', full.arrivalRule === '', (full.arrivalRule || '').slice(0, 160));
+    check('整页落位走 --m-dur-2 / --m-dist-2', /var\(--m-dur-2\)/.test(full.rootTransition || '') && /var\(--m-dist-2\)/.test(full.rootTransition || ''), (full.rootTransition || '').slice(0, 200));
 
     await clearMotion(cdp, sessionId);
     const light = await read(cdp, sessionId, BASE + '/', true);
