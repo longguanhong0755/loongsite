@@ -53,14 +53,14 @@
       "hasRing": true,
       "isOn": true,
       "read": 0.116,
-      "expect": 0.11596361053343261,
+      "expect": 0.11598072693351134,
       "offset": 88.4,
       "rawOffset": "calc(88.4px)",
       "dasharray": "100px",
       "border": "rgba(0, 0, 0, 0)",
-      "sy": 592,
+      "sy": 600,
       "vh": 900,
-      "scrollH": 4941
+      "scrollH": 4949
     }
   },
   {

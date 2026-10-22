@@ -165,11 +165,19 @@
       }
     },
     {
-      "name": "视差走 translate（不覆盖 transform）",
+      "name": "视差只写 translate；静止卡片不建 3D 层",
       "pass": true,
       "detail": {
         "translate": "0px -16.012px",
-        "transform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -0.00105263, 0, 0, 0, 1)"
+        "transform": "none"
+      }
+    },
+    {
+      "name": "视差与悬停 3D 倾斜可叠加",
+      "pass": true,
+      "detail": {
+        "translate": "0px -16.012px",
+        "transform": "matrix3d(0.99863, -0.00365077, 0.0522085, -5.49563e-05, 0, 0.997564, 0.0697565, -7.34279e-05, -0.052336, -0.0696609, 0.996197, -0.00104863, 0, 0, 0, 1)"
       }
     },
     {

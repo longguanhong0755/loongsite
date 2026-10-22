@@ -147,6 +147,49 @@ if (i0 === -1 || i1 === -1) {
   }
 }
 
+/* ---------- 5. 跨页过渡不变量：只允许整页 opacity 淡化 ----------
+   文字一旦被快照后再平移/缩放就会重采样；命名内容元素还会留下旧标题残影。
+   这里把"除导航外不许有独立快照、root 不许位移"锁进源码门禁。 */
+const vtn = [];
+root.walkDecls('view-transition-name', (d) => {
+  const sel = d.parent.selector.replace(/\s+/g, ' ').trim();
+  vtn.push(`${sel}=${d.value}`);
+});
+expect('[过渡] 只允许导航拥有独立快照', vtn.sort().join(' | '), '.nav=site-nav | html.vt-theme .nav=none');
+
+const legacySel = [];
+root.walkRules((r) => {
+  if (/vt-name|data-vt-|vt-arrive|vt-settle|vt-morph|vt-dir/.test(r.selector)) legacySel.push(r.selector);
+});
+expect('[过渡] 不得再有飞行标题 / 方向 / morph 规则', legacySel.join(' | '), '');
+
+const rootNew = declMap.get('::view-transition-new(root)');
+expect('[过渡] 新页 root 只做令牌化淡入', rootNew && rootNew.get('animation'), 'vt-fade-in var(--m-dur-2) var(--ease-soft) both');
+const rootGroup = declMap.get('::view-transition-group(root)');
+expect('[过渡] root 组不做位置/尺寸插值', rootGroup && rootGroup.get('animation'), 'none');
+
+let fade = null;
+const legacyKf = [];
+root.walkAtRules('keyframes', (at) => {
+  if (at.params === 'vt-fade-in') fade = at;
+  else if (/^vt-(page|morph|in-|out-)/.test(at.params)) legacyKf.push(at.params);
+});
+const fadeDecls = [];
+if (fade) fade.walkDecls((d) => fadeDecls.push(`${d.prop}:${d.value}`));
+expect('[过渡] vt-fade-in 只改 opacity', fadeDecls.join(' | '), 'opacity:0');
+expect('[过渡] 不得再有位移动画关键帧', legacyKf.join(' | '), '');
+
+const legacyMarks = [
+  ['main.js', js],
+  ['templates.mjs', readFileSync(path.join(ROOT, 'scripts', 'templates.mjs'), 'utf8')],
+  ['build.mjs', readFileSync(path.join(ROOT, 'scripts', 'build.mjs'), 'utf8')],
+  ['index.html', readFileSync(path.join(ROOT, 'index.html'), 'utf8')]
+];
+for (const [file, src] of legacyMarks) {
+  expect(`[过渡] ${file} 不得残留旧标记`,
+    /vt-name|data-morph|data-vt\b|vt-dir|vt-morph|vt-arrive|vt-settle/.test(src), false);
+}
+
 /* ---------- 结果 ---------- */
 console.log(`[check-design] 源码契约 ${okCount}/${checkedCount} 条通过`);
 if (fails.length) {

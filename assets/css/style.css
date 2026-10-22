@@ -253,6 +253,8 @@ html[data-theme="dark"]::after { mix-blend-mode: screen; }
   height: 100%;
   display: block;
   pointer-events: none;
+  opacity: 1;
+  transition: opacity var(--m-dur-3) var(--ease-soft);
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0.35));
   -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0.35));
 }
@@ -592,7 +594,13 @@ html.js .hero .scroll-cue {
   animation: rise var(--m-dur-3) var(--ease-soft) backwards;
   animation-delay: calc(9 * var(--m-stagger) * var(--hero-layer-ratio));
 }
-html.vt-active .hero * { animation: none !important; }
+/* 到达页不再重播首屏入场。只静音入场动画，不要用 `.hero *` 把
+   scroll-cue 的循环呼吸、复制成功等后续动画一起永久杀掉。 */
+html.vt-active .hero .hero-main > *,
+html.vt-active .hero .hero-avatar,
+html.vt-active .hero .stats-strip,
+html.vt-active .hero .scroll-cue,
+html.vt-active .hero .hero-name[data-split] .ch { animation: none !important; }
 
 /* 标题分层：名字拆成字符，逐个从倾斜的平面里立起来（完整档）；轻量档只做小位移浮起。
    透视写在每个字符自己的 transform 里（不是父级 perspective）：
@@ -1849,10 +1857,9 @@ html.js .reveal.is-in {
 html.js .reveal.is-in.no-rise { animation: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(var(--m-dist-2)); } }
 
-/* 跨页到达只做一层整页运动：首屏块在快照里必须已经在最终位置。
-   以前这里先把块下移 --m-dist-2、落位结束后再上浮，和 root 快照的下落叠加成
-   "下—再下—回弹"，看起来就是抽搐；现在块只标记 is-in/no-rise（保证快照不空白、
-   不重放入场），位移全部交给 ::view-transition-new(root)。 */
+/* 跨页到达只做一层整页淡化：首屏块在快照里必须已经在最终位置。
+   块只标记 is-in/no-rise（保证快照不空白、不重放入场），整页也不位移——
+   文字一旦被烘焙成快照再平移/缩放，边缘就会重采样，看起来就是抖动。 */
 
 .grid > .reveal:nth-child(2), .skill-groups > .reveal:nth-child(2), .post-list > .reveal:nth-child(2) { --d: calc(var(--m-stagger) * 2); }
 .grid > .reveal:nth-child(3), .skill-groups > .reveal:nth-child(3), .post-list > .reveal:nth-child(3) { --d: calc(var(--m-stagger) * 4); }
@@ -1972,24 +1979,21 @@ html.js .reveal.is-in.no-rise { animation: none; }
 .site-name { text-wrap: balance; }
 .section-title { letter-spacing: -0.02em; }
 
-/* ---------- 跨页过渡（Chromium 渐进增强）：新页从上方落位 ---------- */
+/* ---------- 跨页过渡（Chromium 渐进增强）：只有整页淡化，文字零位移 ----------
+   一次换页只允许动 opacity。整页 translate/scale、标题单独飞行、卡片放大
+   都会把文字烘焙成快照再重采样；新旧两层文字叠在一起就是抖动/重影。
+   关系化效果（方向滑动 / 共享元素 morph）已移除：它们必须移动或缩放文字，
+   与"丝滑"目标冲突。导航条继续单独命名，保持像素级不动。 */
 @view-transition { navigation: auto; }
 
 .nav { view-transition-name: site-nav; }
 
-/* 列表卡片标题 ↔ 详情页大标题：同一 --vt-name（模板内联给出）让标题在两页之间飞过去 */
-.vt-name { view-transition-name: var(--vt-name); }
-
-/* 新页淡入盖住旧页，旧层一律不褪色：两层同时半透明会露出背景发灰；
-   命名组也要同一条规则，否则旧快照上留着"空洞"、会提前透出下一页 */
+/* 旧页保持不动到过渡结束；只让新页淡入。两层同时半透明会露出背景发灰。
+   root 组也不做位置/尺寸插值，避免滚动条或视口差异带来整页微移。 */
+::view-transition-group(root) { animation: none; }
 ::view-transition-old(*) { animation: none; }
-::view-transition-new(*) { animation: vt-new var(--dur-2) var(--ease-soft) both; }
-@keyframes vt-new { from { opacity: 0; } }
-
-/* 只给 root 加下滑：共享标题与固定导航有自己的组动画，不能跟着整页位移。
-   一次落位 + 淡入就是全部到达运动；不再追加首屏块的第二段位移 */
-::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; }
-@keyframes vt-page { from { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); } }
+::view-transition-new(root) { animation: vt-fade-in var(--m-dur-2) var(--ease-soft) both; }
+@keyframes vt-fade-in { from { opacity: 0; } }
 
 /* 导航栏不参与淡化。与上面同特异度，必须写在后面才压得住 */
 ::view-transition-group(site-nav),
@@ -1998,32 +2002,16 @@ html.js .reveal.is-in.no-rise { animation: none; }
 /* 导航玻璃半透明，旧快照会把旧的活动底板透出来；直接隐藏旧快照 */
 ::view-transition-old(site-nav) { opacity: 0; }
 
-/* 主题切换：圆形揭示由 WAAPI 驱动。换肤时关掉新页默认淡入，并让导航/飞行标题
-   回到 root 快照里一起被圆形裁剪（独立快照不受 clip 影响，会先在旧页上露出新色） */
-html.vt-theme::view-transition-new(*) { animation: none; }
-html.vt-theme .nav, html.vt-theme .vt-name { view-transition-name: none; }
+/* 到达窗口内禁止平滑滚动：浏览器恢复滚动位置/锚点跳转不能在落位后再滚一段。
+   同时先藏起随机粒子——两套不同种子的粒子图直接叠化会闪；过渡结束后淡入。 */
+html.vt-boot { scroll-behavior: auto; }
+html.vt-boot .bg-fx { opacity: 0; }
 
-/* ---------- 关系化跨页过渡（按"这两页是什么关系"选过渡） ----------
-   跨栏目（首页↔栏目）：上面那条整页从上方落位 + 首屏块随后上浮
-   列表→详情：卡片展开成详情容器（共享元素 morph），根层只淡入，不跟它抢镜头
-   同栏目内：方向化横向滑入（往前一步 / 返回上一层）
-   关系由点击时写入的 data-vt-dir / data-vt-morph 决定（head 内联脚本先写，样式再取） */
-html[data-vt-morph]::view-transition-old(root) { animation: vt-morph-out var(--m-dur-2) var(--ease-soft) both; }
-html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; }
-@keyframes vt-morph-out { to { opacity: 0; } }
-@keyframes vt-morph-in { from { opacity: 0; } }
-/* morph 时标题不再单独飞：它已经是卡片/详情容器的一部分，父子同名会打架 */
-html[data-vt-morph] .vt-name { view-transition-name: none; }
-
-/* morph 优先于方向：卡片展开时根层只淡入，横向滑动会和它抢镜头 */
-html[data-vt-dir="fwd"]:not([data-vt-morph])::view-transition-old(root) { animation: vt-out-left var(--m-dur-2) var(--ease-soft) both; }
-html[data-vt-dir="fwd"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; }
-html[data-vt-dir="back"]:not([data-vt-morph])::view-transition-old(root) { animation: vt-out-right var(--m-dur-2) var(--ease-soft) both; }
-html[data-vt-dir="back"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; }
-@keyframes vt-out-left { to { opacity: 0; transform: translateX(calc(var(--m-dist-3) * -1)); } }
-@keyframes vt-in-right { from { opacity: 0; transform: translateX(var(--m-dist-3)); } }
-@keyframes vt-out-right { to { opacity: 0; transform: translateX(var(--m-dist-3)); } }
-@keyframes vt-in-left { from { opacity: 0; transform: translateX(calc(var(--m-dist-3) * -1)); } }
+/* 主题切换：圆形揭示由 WAAPI 驱动。换肤时关掉 root 的默认淡入，并让导航
+   回到 root 快照里一起被圆形裁剪（独立快照不受 clip 影响，会先在旧页上露出新色）。
+   必须写在跨页淡化规则之后，否则同特异度会被盖掉。 */
+html.vt-theme::view-transition-new(root) { animation: none; }
+html.vt-theme .nav { view-transition-name: none; }
 
 
 /* ---------- 玻璃悬停（GX v3）：一束全局光 + 玻璃显影 + 棱边 + 轻微倾斜 ---------- */
@@ -2078,7 +2066,10 @@ html[data-vt-dir="back"]:not([data-vt-morph])::view-transition-new(root) { anima
 }
 
 .gx-tilt {
-  transform: perspective(950px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  /* 没有 --rx/--ry 时整条 transform 无效 → 静止卡片不建 3D 图层。
+     常驻 perspective(…, 0deg) 会让卡片里的文字在每次换页/重绘时被重新栅格化，
+     产生亚像素抖动；悬停时 JS 同时写两个变量，形变照常。 */
+  transform: perspective(950px) rotateX(var(--rx)) rotateY(var(--ry));
 }
 .hero-card.gx-tilt, .skill-card.gx-tilt { transition: transform var(--dur-2) var(--ease-soft), border-color var(--dur-2) var(--ease-soft); }
 

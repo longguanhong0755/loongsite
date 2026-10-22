@@ -1,185 +1,194 @@
 {
   "results": [
     {
-      "name": "首页→项目卡：写入 morph",
+      "name": "首页：只有导航拥有独立快照",
+      "pass": true,
+      "detail": [
+        "site-nav"
+      ]
+    },
+    {
+      "name": "首页：没有飞行标题 / 关系标记残留",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "项目列表：只有导航拥有独立快照",
+      "pass": true,
+      "detail": [
+        "site-nav"
+      ]
+    },
+    {
+      "name": "项目列表：没有飞行标题 / 关系标记残留",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "跨栏目到达：确实走 View Transition",
+      "pass": true,
+      "detail": true
+    },
+    {
+      "name": "跨栏目到达：html 挂上 vt-active + vt-boot",
       "pass": true,
       "detail": {
-        "dir": null,
-        "morph": "proj-guessword",
-        "htmlDir": null,
-        "htmlMorph": null
+        "cls": "js vt-active vt-boot",
+        "boot": true
       }
     },
     {
-      "name": "首页→项目卡：跨栏目不给方向",
+      "name": "跨栏目到达：除导航外没有独立快照层",
       "pass": true,
-      "detail": null
+      "detail": [
+        "site-nav"
+      ]
     },
     {
-      "name": "旧页：卡片拿到共享元素名",
+      "name": "跨栏目到达：首屏没有 rise / ch-in 在跑",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "跨栏目到达：落位时 vt-boot 已摘掉",
+      "pass": true,
+      "detail": false
+    },
+    {
+      "name": "跨栏目到达：结束后 200/500ms 文字零漂移",
       "pass": true,
       "detail": {
-        "card": "proj-guessword",
-        "title": "none"
+        "finish": 0,
+        "later": 0
       }
     },
     {
-      "name": "旧页：卡内标题不再单独飞（父子同名会打架）",
+      "name": "跨栏目到达：结束后没有补播入场",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "列表→详情：确实走 View Transition",
+      "pass": true,
+      "detail": true
+    },
+    {
+      "name": "列表→详情：详情页除导航外没有独立快照",
+      "pass": true,
+      "detail": [
+        "site-nav"
+      ]
+    },
+    {
+      "name": "列表→详情：首屏没有二次位移动画",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "列表→详情：落位后文字不漂移",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "详情→列表：确实走 View Transition",
+      "pass": true,
+      "detail": true
+    },
+    {
+      "name": "详情→列表：没有旧页面头部残留（只有导航命名）",
+      "pass": true,
+      "detail": [
+        "site-nav"
+      ]
+    },
+    {
+      "name": "详情→列表：落位后文字不漂移",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "详情→列表：结束后没有补播入场",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "浏览器后退：回到详情页",
+      "pass": true,
+      "detail": "/projects/guessword"
+    },
+    {
+      "name": "浏览器后退：标题 400ms 内不漂移",
       "pass": true,
       "detail": {
-        "card": "proj-guessword",
-        "title": "none"
+        "back1": {
+          "top": 232.5,
+          "left": 175,
+          "moving": [],
+          "named": [
+            "site-nav"
+          ]
+        },
+        "back2": {
+          "top": 232.5,
+          "left": 175
+        }
       }
     },
     {
-      "name": "列表→详情：方向 = fwd",
+      "name": "浏览器后退：没有 rise 补播",
       "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-guessword",
-        "htmlDir": null,
-        "htmlMorph": "proj-guessword"
-      }
+      "detail": []
     },
     {
-      "name": "列表→详情：morph = proj-guessword",
+      "name": "浏览器后退：除导航外没有独立快照",
       "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-guessword",
-        "htmlDir": null,
-        "htmlMorph": "proj-guessword"
-      }
+      "detail": [
+        "site-nav"
+      ]
     },
     {
-      "name": "详情→列表：方向 = back",
+      "name": "轻量档到达：确实走 View Transition",
       "pass": true,
-      "detail": {
-        "dir": "back",
-        "morph": null,
-        "htmlDir": "fwd",
-        "htmlMorph": "proj-guessword"
-      }
+      "detail": true
     },
     {
-      "name": "详情→列表：不是卡片展开（无 morph）",
+      "name": "轻量档到达：只有导航命名",
       "pass": true,
-      "detail": {
-        "dir": "back",
-        "morph": null,
-        "htmlDir": "fwd",
-        "htmlMorph": "proj-guessword"
-      }
+      "detail": [
+        "site-nav"
+      ]
     },
     {
-      "name": "详情页「下一个」：方向 = fwd",
+      "name": "轻量档到达：首屏没有二次位移动画",
       "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-image2strokes",
-        "htmlDir": "fwd",
-        "htmlMorph": "proj-guessword"
-      }
+      "detail": []
     },
     {
-      "name": "详情页「下一个」：morph 到下一个项目",
+      "name": "轻量档到达：落位后文字不漂移",
       "pass": true,
-      "detail": "proj-image2strokes"
+      "detail": 0
     },
     {
-      "name": "详情页「上一个」：方向 = back",
+      "name": "手机到达：确实走 View Transition",
       "pass": true,
-      "detail": {
-        "dir": "back",
-        "morph": "proj-ui-components",
-        "htmlDir": "fwd",
-        "htmlMorph": "proj-guessword"
-      }
+      "detail": true
     },
     {
-      "name": "详情页「上一个」：morph 到上一个项目",
+      "name": "手机到达：只有导航命名",
       "pass": true,
-      "detail": "proj-ui-components"
+      "detail": [
+        "site-nav"
+      ]
     },
     {
-      "name": "博客→项目（跨栏目）：无方向",
+      "name": "手机到达：首屏没有二次位移动画",
       "pass": true,
-      "detail": {
-        "dir": null,
-        "morph": null,
-        "htmlDir": "back",
-        "htmlMorph": "proj-ui-components"
-      }
+      "detail": []
     },
     {
-      "name": "博客→项目（跨栏目）：无 morph",
+      "name": "手机到达：落位后文字不漂移",
       "pass": true,
-      "detail": {
-        "dir": null,
-        "morph": null,
-        "htmlDir": "back",
-        "htmlMorph": "proj-ui-components"
-      }
-    },
-    {
-      "name": "新页：data-vt-dir = fwd",
-      "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-guessword",
-        "hero": "proj-guessword",
-        "h1": "none",
-        "leftDir": null,
-        "leftMorph": null
-      }
-    },
-    {
-      "name": "新页：data-vt-morph = proj-guessword",
-      "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-guessword",
-        "hero": "proj-guessword",
-        "h1": "none",
-        "leftDir": null,
-        "leftMorph": null
-      }
-    },
-    {
-      "name": "新页：详情容器拿到共享元素名",
-      "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-guessword",
-        "hero": "proj-guessword",
-        "h1": "none",
-        "leftDir": null,
-        "leftMorph": null
-      }
-    },
-    {
-      "name": "新页：标题不再单独飞",
-      "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-guessword",
-        "hero": "proj-guessword",
-        "h1": "none",
-        "leftDir": null,
-        "leftMorph": null
-      }
-    },
-    {
-      "name": "新页：读完即清（不留给下一页）",
-      "pass": true,
-      "detail": {
-        "dir": "fwd",
-        "morph": "proj-guessword",
-        "hero": "proj-guessword",
-        "h1": "none",
-        "leftDir": null,
-        "leftMorph": null
-      }
+      "detail": 0
     },
     {
       "name": "拖拽中：生成玻璃块",
@@ -249,22 +258,31 @@
       }
     },
     {
-      "name": "到达：确实走 View Transition",
+      "name": "主题切换：颜色确实切换",
       "pass": true,
-      "detail": true
+      "detail": {
+        "theme": "dark",
+        "vtTheme": false,
+        "boot": false
+      }
     },
     {
-      "name": "到达：首屏块没有二次位移（translate 保持 0）",
+      "name": "主题切换：vt-theme 会清掉",
       "pass": true,
-      "detail": [
-        "none",
-        "none"
-      ]
+      "detail": {
+        "theme": "dark",
+        "vtTheme": false,
+        "boot": false
+      }
     },
     {
-      "name": "到达：html 不再挂 vt-arrive / vt-settle",
+      "name": "主题切换：不会误加跨页到达锁",
       "pass": true,
-      "detail": "js vt-active"
+      "detail": {
+        "theme": "dark",
+        "vtTheme": false,
+        "boot": false
+      }
     }
   ]
 }

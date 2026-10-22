@@ -157,16 +157,10 @@ const MOTION = `(function(){var d=document.documentElement,t='full';try{var q=(l
 
 /* 到达编排必须在内联脚本里注册：defer 的 main.js 可能晚于跨页快照执行，
    那样 pagereveal 里的首屏标记会错过首帧，快照就是空白。这里只负责把首屏块
-   标成"已就位、不重放入场"；整页位移只由 ::view-transition-new(root) 完成，
-   不要再给块写 translate/序号——两段方向相反的位移会抽搐。 */
-const ARRIVAL = `(function(){var d=document.documentElement;window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition)return;d.classList.add('vt-active');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal');for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');}}},{once:true});})();`;
-
-/* 关系化过渡的交接：旧页面点击时把"这次要做什么过渡"写进 sessionStorage，
-   新页面在首绘前读出来写进 <html> 的 data-vt-dir / data-vt-morph，CSS 再据此选过渡。
-   必须抢在快照之前（head 内联脚本），晚一步就是"新页用默认过渡落位、旧页已经飞完了"。
-   顺带把 morph 目标的 view-transition-name 用一条 <style> 挂上——
-   目标元素在 body 里，head 脚本那时还拿不到它，但 CSS 选择器可以等它解析完再生效。 */
-const ROUTE = `(function(){var d=document.documentElement;try{var dir=sessionStorage.getItem('vt-dir');var morph=sessionStorage.getItem('vt-morph');sessionStorage.removeItem('vt-dir');sessionStorage.removeItem('vt-morph');if(dir)d.setAttribute('data-vt-dir',dir);if(morph){d.setAttribute('data-vt-morph',morph);var st=document.createElement('style');st.textContent='[data-morph="'+morph+'"]{view-transition-name:'+morph+';}';document.head.appendChild(st);}}catch(e){}})();`;
+   标成"已就位、不重放入场"，并给到达窗口加锁（禁止平滑滚动、藏起随机粒子）。
+   整页动作只有 ::view-transition-new(root) 的 opacity 淡入——不写 translate，
+   任何第二段位移都会让文字重采样、看起来发抖。 */
+const ARRIVAL = `(function(){var d=document.documentElement;function done(){d.classList.remove('vt-boot');}window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition||d.classList.contains('vt-theme'))return;d.classList.add('vt-active','vt-boot');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal');for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');}}try{e.viewTransition.finished.then(done,done);}catch(err){}setTimeout(done,1200);},{once:true});})();`;
 
 export function layout({ profile, title, description, current = '/', path = '/', content, bodyClass = '', readRing = false }) {
   const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name} · ${profile.title}`;
@@ -194,7 +188,6 @@ export function layout({ profile, title, description, current = '/', path = '/',
 <link rel="stylesheet" href="/assets/css/style.css?v=${CSS_V}">
 <script>${NO_FLASH}</script>
 <script>${MOTION}</script>
-<script>${ROUTE}</script>
 <script>${ARRIVAL}</script>
 <script type="speculationrules">{"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/sub/*"}}]},"eagerness":"moderate"}]}</script>
 </head>
@@ -283,12 +276,12 @@ export function projectCard(p, idx = 0, total = 0) {
     : `<div class="card-actions">
         <a class="btn btn-sm btn-ghost" href="/projects/${p.slug}">查看简介${icon('chevronRight', 15)}</a>
       </div>`;
-  return `<article class="project-card glass corners reveal" data-visibility="${esc(p.visibility)}" data-morph="proj-${esc(p.slug)}">
+  return `<article class="project-card glass corners reveal" data-visibility="${esc(p.visibility)}">
     <div class="card-top">
       <div class="card-icon">${icon(p.icon || 'box', 22)}</div>
       <div class="card-meta">${meta}</div>
     </div>
-    <h3 class="card-title vt-name" style="--vt-name:proj-${esc(p.slug)}"><a href="/projects/${p.slug}">${esc(p.name)}</a></h3>
+    <h3 class="card-title"><a href="/projects/${p.slug}">${esc(p.name)}</a></h3>
     <p class="card-subtitle">${esc(p.subtitle)}</p>
     <p class="card-summary">${esc(p.summary)}</p>
     <div class="card-tags">${tags}</div>

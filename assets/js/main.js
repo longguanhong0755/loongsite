@@ -79,60 +79,9 @@
   })();
   window.LSMotion = Motion;
 
-  /* ---------- 关系化跨页过渡：点击时决定"这两页之间怎么过渡" ----------
-     三种关系：跨栏目（默认：整页从上方落位 + 首屏块上浮）、
-     列表→详情（卡片展开成详情容器）、同栏目内（方向化横向滑入）。
-     判断结果写进 sessionStorage，新页面在首绘前读走（head 内联脚本），CSS 据此选过渡。 */
-  function isListPath(p) { return /^\/[^/]+\/$/.test(p || ''); }
-  function planTransition(a) {
-    var url;
-    try { url = new URL(a.href, location.href); } catch (e) { return null; }
-    var path = url.pathname;
-    if (path === location.pathname) return null;          /* 同页锚点 / 刷新 */
-    var plan = { dir: '', morph: '' };
-    var declared = a.getAttribute('data-vt');
-    if (declared === 'fwd' || declared === 'back') plan.dir = declared;
-    var fromSec = (location.pathname.split('/')[1] || '');
-    var toSec = (path.split('/')[1] || '');
-    if (!plan.dir && fromSec && fromSec === toSec) {
-      /* 同栏目内：进详情是前进，回列表是返回 */
-      plan.dir = (isListPath(path) && !isListPath(location.pathname)) ? 'back' : 'fwd';
-    }
-    var card = a.closest ? a.closest('[data-morph]') : null;
-    if (card) {
-      var name = card.getAttribute('data-morph') || '';
-      var slug = name.replace(/^proj-/, '');
-      if (slug && (path === '/projects/' + slug || path === '/projects/' + slug + '/')) plan.morph = name;
-    }
-    return plan;
-  }
-  document.addEventListener('click', function (e) {
-    if (e.defaultPrevented) return;
-    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-    if (!a) return;
-    if (a.target && a.target !== '_self') return;
-    if (a.hasAttribute('download')) return;
-    var url;
-    try { url = new URL(a.href, location.href); } catch (err) { return; }
-    if (url.origin !== location.origin) return;
-    var plan = planTransition(a);
-    if (!plan) return;
-    try {
-      if (plan.dir) sessionStorage.setItem('vt-dir', plan.dir); else sessionStorage.removeItem('vt-dir');
-      if (plan.morph) {
-        sessionStorage.setItem('vt-morph', plan.morph);
-        /* 旧页面也��给这张卡挂上共享元素名，浏览器才能把它展开成新页的详情容器；
-           卡内标题同时取消单独飞行（父子同名会打架） */
-        var st = document.createElement('style');
-        st.textContent = '[data-morph="' + plan.morph + '"]{view-transition-name:' + plan.morph + ';}'
-          + '[data-morph="' + plan.morph + '"] .vt-name{view-transition-name:none;}';
-        document.head.appendChild(st);
-      } else {
-        sessionStorage.removeItem('vt-morph');
-      }
-    } catch (err2) {}
-  }, true);
+  /* 跨页过渡不再在点击时做关系判断：只有整页淡化。
+     以前这里会写 sessionStorage、给卡片动态挂共享元素名，旧页标题因此被单独抠成
+     一层留在新页上，是文字重影/抖动的主要来源。全部移除。 */
 
   /* ---------- 导航玻璃块拖拽：按住活动底板拖到别的栏目，松手才切换 ----------
      拖动时那块玻璃脱离文字跟着手指走，落在哪个栏目哪个栏目高亮；
@@ -366,16 +315,22 @@
   var reveals = document.querySelectorAll('.reveal');
   /* 首屏块必须在首绘之前就位：跨页过渡取的是新文档的第一帧，而 IntersectionObserver 的
      首次回调晚于首绘——慢一步就是"淡进一张空白页、内容再逐块长出来"，像重新打开了一个网站。
-     判定门槛与下面 io 的 rootMargin(-6%) / threshold(0.04) 对齐，否则会"先显后隐"闪一下 */
-  var firstScreen = [];
+     判定门槛与下面 io 的 rootMargin(-6%) / threshold(0.04) 对齐，否则会"先显后隐"闪一下。
+     内联 ARRIVAL 可能已经先标过一轮，这里直接接管，避免两套判定打架后重播上浮。 */
+  var firstScreen = [].slice.call(document.querySelectorAll('.reveal.is-in'));
+  function rememberFirstScreen(list) {
+    for (var n = 0; n < list.length; n++) if (firstScreen.indexOf(list[n]) < 0) firstScreen.push(list[n]);
+  }
   if ('IntersectionObserver' in window && reveals.length) {
     var revRoot = window.innerHeight * 0.94;
+    var fresh = [];
     for (var fs = 0; fs < reveals.length; fs++) {
       if (visibleRatio(reveals[fs], revRoot) >= 0.04) {
         reveals[fs].classList.add('is-in', 'no-rise');
-        firstScreen.push(reveals[fs]);
+        fresh.push(reveals[fs]);
       }
     }
+    rememberFirstScreen(fresh);
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         var el = en.target;
@@ -387,6 +342,9 @@
           return;
         }
         if (k > -1) return;                      /* 首屏已就位的块不重播入场 */
+        /* 已显示但没登记进 firstScreen（滚动恢复晚于标记、字体/图片改变布局）：
+           先登记，绝不能再补一次 rise —— 那就是落位后的第二次位移。 */
+        if (el.classList.contains('is-in')) { firstScreen.push(el); return; }
         if (en.boundingClientRect.top < 0) {
           el.classList.add('no-rise');    /* 从上方进入（往回翻 / 锚点直达）→ 直接显示，不做入场 */
         } else {
@@ -397,13 +355,14 @@
     }, { rootMargin: '0px 0px -6% 0px', threshold: 0.04 });
     reveals.forEach(function (el) { io.observe(el); });
 
-    /* 保险：滚到页面底部仍有块未显示时，补一次显影（避免内容一直空白） */
+    /* 保险：滚到页面底部仍有块未显示时，补一次显影（避免内容一直空白）。
+       补显影只负责"看见"，不再补一段入场位移。 */
     var sweep = function () {
       if (window.innerHeight + window.scrollY < document.documentElement.scrollHeight - 4) return;
       var rest = document.querySelectorAll('.reveal:not(.is-in)');
       for (var s = 0; s < rest.length; s++) {
         var r = rest[s].getBoundingClientRect();
-        if (r.top < window.innerHeight && r.bottom > 0) rest[s].classList.add('is-in');
+        if (r.top < window.innerHeight && r.bottom > 0) rest[s].classList.add('is-in', 'no-rise');
       }
     };
     window.addEventListener('scroll', sweep, { passive: true });
@@ -711,12 +670,12 @@
     });
   }
 
-  /* 跨页过渡激活时打标记：入场编排据此跳过，避免与过渡动画打架。
-     到达位移只由 root 快照那一次完成；首屏块已由 head 内联脚本标记为就位，
-     不能再叠加第二段 translate，否则落位后会再抽一下。 */
+  /* 内联 ARRIVAL 已经给到达页加了 vt-active / vt-boot，并标好首屏块。
+     这里只把晚到的标记同步进 firstScreen：IO 首次回调就不会把它们当普通块
+     再补一次 rise（落位后的第二段位移就是抖动来源）。 */
   window.addEventListener('pagereveal', function (e) {
-    if (!e || !e.viewTransition) return;
-    root.classList.add('vt-active');
+    if (!e || !e.viewTransition || root.classList.contains('vt-theme')) return;
+    rememberFirstScreen(document.querySelectorAll('.reveal.is-in'));
   });
 
   /* ---------- 数字滚动（首屏统计 / 项目指标） ---------- */
@@ -1919,6 +1878,9 @@
 
     function render(now) {
       raf = window.requestAnimationFrame(render);
+      /* 到达窗口内粒子层是隐藏的（CSS opacity:0），别再空转推进：
+         快照里没有粒子，结束后从同一帧淡入，避免背景星空突然跳位。 */
+      if (root.classList.contains('vt-boot')) { last = now; return; }
       if (last && now - last < FRAME_MS) return;   /* 30fps 节流（跳过时不产生画布更新） */
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
       last = now;

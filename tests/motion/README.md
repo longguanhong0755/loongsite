@@ -7,9 +7,9 @@ npm run serve     # http://127.0.0.1:8090
 ```
 
 ```bash
-npm run test:tier       # P0 分级            27 条
-npm run test:route      # P1 跨页过渡        30 条
-npm run test:depth      # P2 首屏/视差       27 条
+npm run test:tier       # P0 分级            28 条
+npm run test:route      # 跨页丝滑验收       42 条
+npm run test:depth      # P2 首屏/视差       28 条
 npm run test:interact   # P3 GX/微交互       35 条
 npm run test:blog       # P4 阅读环/目录     19 条
 npm run test:degrade    # P5 降级            8 条
@@ -30,6 +30,10 @@ npm run perf:light      # 性能（轻量档）
 - **坐标相同的 `pointermove` 不会派发**：悬停前先把鼠标挪到 `(2,2)` 再移到目标。
 - **剪贴板**：复制测试需要 `Browser.grantPermissions` 授权。
 - **跨文档导航**：`Performance` 计数器会重置，导航场景的每帧成本记为 `null`（只测帧/长任务）。
+- **跨页过渡的帧在 headless 里不推进**：跨页验收不靠逐帧截图，而是分三个时间点读 DOM：
+  `pagereveal` 时检查“除导航外没有独立快照 / 首屏没有 rise 在跑 / vt-boot 已挂”，
+  `viewTransition.finished` +200/500ms 检查标题与正文矩形是否漂移（阈值 0.5px）。
+  这样即使过渡动画停在第一帧，也能证明文字没有被第二层移动。
 
 ## 性能口径
 

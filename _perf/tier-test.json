@@ -15,8 +15,9 @@
     "apiStagger": 0.028,
     "apiParallax": 1,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
-    "arrivalRule": ""
+    "rootTransition": "::view-transition-new(root) { animation: vt-fade-in var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-fade-in { \n  0% { opacity: 0; }\n} | html.vt-theme::view-transition-new(root) { animation: auto ease 0s 1 normal none running none; } | ",
+    "arrivalRule": "",
+    "legacyRule": ""
   },
   "light": {
     "tier": "light",
@@ -34,8 +35,9 @@
     "apiStagger": 0.016,
     "apiParallax": 0,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
-    "arrivalRule": ""
+    "rootTransition": "::view-transition-new(root) { animation: vt-fade-in var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-fade-in { \n  0% { opacity: 0; }\n} | html.vt-theme::view-transition-new(root) { animation: auto ease 0s 1 normal none running none; } | ",
+    "arrivalRule": "",
+    "legacyRule": ""
   },
   "forced": {
     "tier": "full",
@@ -53,8 +55,9 @@
     "apiStagger": 0.028,
     "apiParallax": 1,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
-    "arrivalRule": ""
+    "rootTransition": "::view-transition-new(root) { animation: vt-fade-in var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-fade-in { \n  0% { opacity: 0; }\n} | html.vt-theme::view-transition-new(root) { animation: auto ease 0s 1 normal none running none; } | ",
+    "arrivalRule": "",
+    "legacyRule": ""
   },
   "explicitLight": {
     "tier": "light",
@@ -72,8 +75,9 @@
     "apiStagger": 0.016,
     "apiParallax": 0,
     "riseKeyframes": "translateY(var(--m-dist-2))",
-    "rootTransition": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"fwd\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; } | html[data-vt-dir=\"back\"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; } | ",
-    "arrivalRule": ""
+    "rootTransition": "::view-transition-new(root) { animation: vt-fade-in var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-fade-in { \n  0% { opacity: 0; }\n} | html.vt-theme::view-transition-new(root) { animation: auto ease 0s 1 normal none running none; } | ",
+    "arrivalRule": "",
+    "legacyRule": ""
   },
   "results": [
     {
@@ -155,9 +159,14 @@
       "detail": ""
     },
     {
-      "name": "整页落位走 --m-dur-2 / --m-dist-2",
+      "name": "整页只做 opacity 淡入（走 --m-dur-2，无位移）",
       "pass": true,
-      "detail": "::view-transition-new(root) { animation: vt-page var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-page { \n  0% { opacity: 0; transform: translateY(calc(var(--m-dist-2) * -1)); }\n} | html[data-v"
+      "detail": "::view-transition-new(root) { animation: vt-fade-in var(--m-dur-2) var(--ease-soft) both; } | @keyframes vt-fade-in { \n  0% { opacity: 0; }\n} | html.vt-theme::view-transition-new(root) { animation: auto ease 0s 1 normal "
+    },
+    {
+      "name": "不再有飞行标题 / 方向 / morph 规则",
+      "pass": true,
+      "detail": ""
     },
     {
       "name": "减动效：档位 = light",

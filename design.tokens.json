@@ -74,7 +74,7 @@
       "soft": "cubic-bezier(0.22, 0.61, 0.36, 1)",
       "snap": "cubic-bezier(0.2, 0.7, 0.2, 1)"
     },
-    "roles": "悬停色/光 = dur1；边框、跨页淡化、导航压缩 = dur2；滚动浮现、到达后块上浮 = dur3；dist1/2/3 = 小/中/大位移；stagger = 逐项错峰步长；parallax = 景深视差强度（0 关掉）；spot = 光斑强度系数",
+    "roles": "悬停色/光 = dur1；边框、跨页淡化、导航压缩 = dur2；滚动浮现 = dur3；dist1/2/3 = 小/中/大位移；stagger = 逐项错峰步长；parallax = 景深视差强度（0 关掉）；spot = 光斑强度系数",
     "hero": {
       "_note": "首屏分层入场：层间错峰 = --m-stagger × layerRatio，字符间错峰 = --m-stagger × charRatio。写成比率而不是绝对值——轻量档的 stagger 变短，错峰自动等比缩小，不必再维护第二套数字。",
       "layerRatio": "2.5",

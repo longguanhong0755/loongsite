@@ -221,7 +221,7 @@ async function run() {
     if (navTo) {
       await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: navTo.x, y: navTo.y, button: 'left', clickCount: 1 });
       /* 跨文档过渡会冻结若干帧，采样下限放宽到 6；时间拉长保证平稳段仍能采到帧 */
-      await runScenario('跨页导航（过渡 + 到达上浮）', 5000, async () => {
+      await runScenario('跨页导航（整页淡化）', 5000, async () => {
         await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: navTo.x, y: navTo.y, button: 'left', clickCount: 1 });
         await sleep(300);
       }, 6);

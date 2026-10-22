@@ -113,8 +113,16 @@ async function run() {
     check('标题动画时长 = --m-dur-3', split.dur === split.dur3, { dur: split.dur, dur3: split.dur3 });
     check('完整档：字符带 3D 倾斜入场', split.name === 'ch-in', split.name);
 
-    /* 拆字符不能改排版：宽度与未拆时一致，且不产生横向溢出 */
-    await sleep(1100); /* 等入场动画结束，量的是落位后的排版 */
+    /* 拆字符不能改排版：先把入场动画直接推到终点，再量落位后的排版。
+       headless 帧率低时 sleep 不可靠，动画停在 3D 中间态会把投影宽度量歪。 */
+    await ev(cdp, sessionId, `(() => {
+      var list = document.querySelectorAll('.hero-name .ch, .hero-main > *, .hero-avatar, .stats-strip, .scroll-cue');
+      for (var i = 0; i < list.length; i++) {
+        var as = list[i].getAnimations ? list[i].getAnimations() : [];
+        for (var j = 0; j < as.length; j++) { try { as[j].finish(); } catch (e) {} }
+      }
+    })()`);
+    await sleep(80);
     const layout = await ev(cdp, sessionId, `(() => {
       var h = document.querySelector('.hero-name');
       var cs = getComputedStyle(h);
@@ -179,12 +187,27 @@ async function run() {
     const cueTravel = Math.abs(parseFloat(after.cue.split(' ')[1]));
     check('提示语与卡片错速（两层分离）', Math.abs(cardTravel - cueTravel) > 5, { cardTravel, cueTravel });
 
-    /* 视差写 translate 不写 transform：玻璃 3D 倾斜还能叠加 */
+    /* 视差写 translate 不写 transform：静止卡片不建 3D 图层（避免文字反复栅格化），
+       悬停写 --rx/--ry 时仍与视差叠加。 */
     const compose = await ev(cdp, sessionId, `(() => {
       var card = document.querySelector('.hero-card');
       return { translate: getComputedStyle(card).translate, transform: getComputedStyle(card).transform };
     })()`);
-    check('视差走 translate（不覆盖 transform）', compose.translate !== 'none' && compose.transform !== 'none', compose);
+    check('视差只写 translate；静止卡片不建 3D 层', compose.translate !== 'none' && compose.transform === 'none', compose);
+    const composeTilt = await ev(cdp, sessionId, `(() => {
+      var card = document.querySelector('.hero-card');
+      var prev = card.style.transition;
+      card.style.transition = 'none';
+      card.style.setProperty('--rx', '4deg');
+      card.style.setProperty('--ry', '-3deg');
+      var cs = getComputedStyle(card);
+      var out = { translate: cs.translate, transform: cs.transform };
+      card.style.removeProperty('--rx');
+      card.style.removeProperty('--ry');
+      card.style.transition = prev;
+      return out;
+    })()`);
+    check('视差与悬停 3D 倾斜可叠加', composeTilt.translate !== 'none' && /^matrix3d\(/.test(composeTilt.transform), composeTilt);
 
     /* ---------- 3. 轻量档：视差关掉、字符不带 3D ---------- */
     await go(cdp, sessionId, BASE + '/?motion=light');

@@ -76,7 +76,7 @@ const PROBE = `(() => {
           var r = rules[j];
           var sel = r.selectorText || '';
           if (sel.indexOf('::view-transition-new(root)') >= 0) out += r.cssText + ' | ';
-          if (r.type === CSSRule.KEYFRAMES_RULE && r.name === 'vt-page') out += r.cssText + ' | ';
+          if (r.type === CSSRule.KEYFRAMES_RULE && (r.name === 'vt-fade-in' || r.name === 'vt-page')) out += r.cssText + ' | ';
         }
       }
       return out;
@@ -90,6 +90,21 @@ const PROBE = `(() => {
         for (var j = 0; j < rules.length; j++) {
           var sel = rules[j].selectorText || '';
           if (sel.indexOf('vt-settle') >= 0 || sel.indexOf('vt-arrive') >= 0) out += rules[j].cssText + ' | ';
+        }
+      }
+      return out;
+    })(),
+    legacyRule: (function () {
+      var out = '';
+      for (var i = 0; i < document.styleSheets.length; i++) {
+        var sheet = document.styleSheets[i];
+        var rules;
+        try { rules = sheet.cssRules; } catch (e) { continue; }
+        for (var j = 0; j < rules.length; j++) {
+          var r = rules[j];
+          var sel = r.selectorText || '';
+          if (/vt-name|data-vt-|vt-morph|vt-dir/.test(sel)) out += r.cssText + ' | ';
+          if (r.type === CSSRule.KEYFRAMES_RULE && /^vt-(page|morph|in-|out-)/.test(r.name)) out += r.cssText + ' | ';
         }
       }
       return out;
@@ -160,7 +175,10 @@ async function run() {
     check('LSMotion.parallax() = 1', full.apiParallax === 1, full.apiParallax);
     check('浮现位移走令牌 var(--m-dist-2)', /var\(--m-dist-2\)|translateY\(16px\)/.test(full.riseKeyframes || ''), full.riseKeyframes);
     check('到达只有整页一层运动（无首屏块二次位移）', full.arrivalRule === '', (full.arrivalRule || '').slice(0, 160));
-    check('整页落位走 --m-dur-2 / --m-dist-2', /var\(--m-dur-2\)/.test(full.rootTransition || '') && /var\(--m-dist-2\)/.test(full.rootTransition || ''), (full.rootTransition || '').slice(0, 200));
+    check('整页只做 opacity 淡入（走 --m-dur-2，无位移）',
+      /vt-fade-in/.test(full.rootTransition || '') && /var\(--m-dur-2\)/.test(full.rootTransition || '')
+      && !/(translate|transform|scale)\s*:/.test(full.rootTransition || ''), (full.rootTransition || '').slice(0, 220));
+    check('不再有飞行标题 / 方向 / morph 规则', full.legacyRule === '', (full.legacyRule || '').slice(0, 160));
 
     await clearMotion(cdp, sessionId);
     const light = await read(cdp, sessionId, BASE + '/', true);

@@ -181,7 +181,7 @@
     "pass": true,
     "detail": [
       "scale(0.97) => none",
-      "translateY(16px) => perspective(950px) rotateX(0deg) rotateY(0deg)"
+      "translateY(16px) => none"
     ]
   },
   {
