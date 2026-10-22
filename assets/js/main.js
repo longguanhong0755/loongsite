@@ -412,6 +412,44 @@
     reveals.forEach(function (el) { el.classList.add('is-in'); });
   }
 
+  /* ---------- 复制状态：转圈（进行中）→ 对勾（成功）→ 复原 ---------- */
+  var copySize = function (btn) {
+    var svg = btn.querySelector('svg');
+    return svg && svg.getAttribute('width') ? Number(svg.getAttribute('width')) : 14;
+  };
+  var spinSvg = function (size) {
+    return '<svg class="ic ic-spin" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/></svg>';
+  };
+  var okSvg = function (size) {
+    return '<svg class="ic ic-ok" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m20 6-11 11-5-5"/></svg>';
+  };
+  var copyBusy = function (btn, text) {
+    var size = copySize(btn);
+    btn.__copyOld = { html: btn.innerHTML, label: btn.getAttribute('aria-label') };
+    btn.setAttribute('aria-busy', '1');
+    btn.innerHTML = text ? spinSvg(size) + text : spinSvg(size);
+  };
+  var copyDone = function (btn, text) {
+    var old = btn.__copyOld || { html: btn.innerHTML, label: btn.getAttribute('aria-label') };
+    var size = copySize(btn);
+    btn.removeAttribute('aria-busy');
+    btn.classList.add('is-done');
+    btn.innerHTML = text ? okSvg(size) + text : okSvg(size);
+    if (old.label) btn.setAttribute('aria-label', '已复制');
+    setTimeout(function () {
+      btn.classList.remove('is-done');
+      btn.innerHTML = old.html;
+      if (old.label) btn.setAttribute('aria-label', old.label);
+      btn.__copyOld = null;
+    }, 1600);
+  };
+  var copyFail = function (btn) {
+    var old = btn.__copyOld;
+    btn.removeAttribute('aria-busy');
+    if (old) btn.innerHTML = old.html;
+    btn.__copyOld = null;
+  };
+
   /* ---------- 代码复制 ---------- */
   document.querySelectorAll('[data-copy]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -420,14 +458,10 @@
       var text = target.textContent || '';
 
       function done() {
-        var old = btn.innerHTML;
-        btn.classList.add('is-done');
-        btn.textContent = '已复制';
-        setTimeout(function () {
-          btn.classList.remove('is-done');
-          btn.innerHTML = old;
-        }, 1600);
+        copyDone(btn, '已复制');
       }
+
+      copyBusy(btn, '复制');
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(done, function () { fallback(); });
@@ -668,6 +702,7 @@
        不因系统"减弱动态效果"关闭。 */
     var K = 250, C = 30, M = 0.6;
     var POOL = 76;                 /* 显影半径：光斑 70px + 一点余量 */
+    var RIM_BAND = 90;             /* 棱边接光的影响带：光标离顶边多近，顶边那条光多亮 */
     var lit = [], hot = [], litRect = [];
     var wasLit = false;
     var lastTarget = null, lastX = 0, lastY = 0, hasPt = false;
@@ -756,23 +791,31 @@
         }
       }
       hot = chain;
-      /* 光集：光标半径内的所有玻璃块 = gx-lit；顺带缓存矩形给弹簧帧用 */
-      var next = [], nextRect = [];
+      /* 光集：光标半径内的所有玻璃块 = gx-lit；顺带缓存矩形给弹簧帧用。
+         顺带算两个"按距离"的系数：
+         —— --gx-k：光标离块越远越暗（原来只有"命中/没命中"两档，近邻一律 0.55）
+         —— --gx-rim-k：光标离顶边越近，顶边那条高光越亮 */
+      var next = [], nextRect = [], nextK = [], nextRim = [];
       for (i = 0; i < gxHosts.length; i++) {
         el = gxHosts[i];
         r = el.getBoundingClientRect();
-        if (r.width && r.height &&
-            lastX >= r.left - POOL && lastX <= r.right + POOL &&
-            lastY >= r.top - POOL && lastY <= r.bottom + POOL) {
-          next.push(el);
-          nextRect.push({ l: r.left, t: r.top });
-        }
+        if (!r.width || !r.height) continue;
+        var ddx = lastX < r.left ? r.left - lastX : (lastX > r.right ? lastX - r.right : 0);
+        var ddy = lastY < r.top ? r.top - lastY : (lastY > r.bottom ? lastY - r.bottom : 0);
+        var dd = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (dd > POOL) continue;
+        next.push(el);
+        nextRect.push({ l: r.left, t: r.top });
+        nextK.push(1 - dd / POOL);
+        nextRim.push(Math.max(0, 1 - Math.abs(lastY - r.top) / RIM_BAND));
       }
       for (i = 0; i < lit.length; i++) {
         if (next.indexOf(lit[i]) < 0) lit[i].classList.remove('gx-lit');
       }
       for (i = 0; i < next.length; i++) {
         if (lit.indexOf(next[i]) < 0) next[i].classList.add('gx-lit');
+        next[i].style.setProperty('--gx-k', nextK[i].toFixed(3));
+        next[i].style.setProperty('--gx-rim-k', nextRim[i].toFixed(3));
       }
       lit = next;
       litRect = nextRect;
@@ -925,10 +968,16 @@
   document.querySelectorAll('[data-copy-text]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy-text') || '';
+      copyBusy(btn);
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(function () { toast('已复制 ' + text); }, function () { toast('复制失败，请手动选择'); });
+        navigator.clipboard.writeText(text).then(function () {
+          copyDone(btn);
+          toast('已复制 ' + text);
+        }, function () {
+          copyFail(btn);
+          toast('复制失败，请手动选择');
+        });
       } else {
-        toast('已复制 ' + text);
         var ta = document.createElement('textarea');
         ta.value = text;
         ta.style.position = 'fixed';
@@ -937,6 +986,8 @@
         ta.select();
         try { document.execCommand('copy'); } catch (e) {}
         document.body.removeChild(ta);
+        copyDone(btn);
+        toast('已复制 ' + text);
       }
     });
   });
@@ -1143,29 +1194,67 @@
     var fchips = froot.querySelectorAll('[data-filter]');
     var fcards = fgrid.querySelectorAll('[data-visibility]');
 
+    /* 筛选编排：退场（淡出缩小）→ 落位（FLIP 重排 + 进场淡入）。
+       顺序有讲究：退场的卡片还在流里时，留下的卡片位置还没变；
+       等它们真正隐藏、网格重排完，才量得出新位置，FLIP 才有意义。
+       连续快速点时用 seq 作废上一轮，避免两轮动画互相打架。 */
+    var FLIP_EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+    var filterSeq = 0;
+    var exitAnims = [];
     var applyFilter = function (mode, animate) {
-      var first = {};
-      if (animate) {
-        for (var i = 0; i < fcards.length; i++) first[i] = fcards[i].getBoundingClientRect();
+      var i, k, seq = ++filterSeq;
+      for (i = 0; i < exitAnims.length; i++) { try { exitAnims[i].cancel(); } catch (e) {} }
+      exitAnims = [];
+
+      var want = [], oldRect = [], entering = [], exiting = [];
+      for (i = 0; i < fcards.length; i++) {
+        want[i] = mode === 'all' || fcards[i].getAttribute('data-visibility') === mode;
+        var hidden = fcards[i].classList.contains('is-hidden');
+        /* 隐藏中的卡片量出来是空矩形，不能当旧位置用——否则进场卡片会从 (0,0) 飞进来 */
+        oldRect[i] = hidden ? null : fcards[i].getBoundingClientRect();
+        if (want[i] === !hidden) continue;
+        if (want[i]) entering.push(fcards[i]); else exiting.push(fcards[i]);
       }
-      for (var j = 0; j < fcards.length; j++) {
-        var show = mode === 'all' || fcards[j].getAttribute('data-visibility') === mode;
-        fcards[j].classList.toggle('is-hidden', !show);
+      if (!animate) {
+        for (i = 0; i < fcards.length; i++) fcards[i].classList.toggle('is-hidden', !want[i]);
+        return;
       }
-      if (animate) {
-        for (var k = 0; k < fcards.length; k++) {
+      for (i = 0; i < exiting.length; i++) {
+        exitAnims.push(exiting[i].animate(
+          [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.97)' }],
+          { duration: 150, easing: FLIP_EASE }
+        ));
+      }
+      var settle = function () {
+        if (seq !== filterSeq) return;
+        for (i = 0; i < fcards.length; i++) fcards[i].classList.toggle('is-hidden', !want[i]);
+        for (i = 0; i < entering.length; i++) {
+          entering[i].animate(
+            [{ opacity: 0, transform: 'scale(0.97)' }, { opacity: 1, transform: 'none' }],
+            { duration: 220, easing: FLIP_EASE, delay: i * 40 }
+          );
+        }
+        for (k = 0; k < fcards.length; k++) {
           if (fcards[k].classList.contains('is-hidden')) continue;
+          var f = oldRect[k];
+          if (!f) continue;
           var last = fcards[k].getBoundingClientRect();
-          var f = first[k];
-          var dx = f ? f.left - last.left : 0;
-          var dy = f ? f.top - last.top : 0;
+          var dx = f.left - last.left;
+          var dy = f.top - last.top;
           if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
             fcards[k].animate(
               [{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }],
-              { duration: 340, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' }
+              { duration: 340, easing: FLIP_EASE }
             );
           }
         }
+      };
+      if (exitAnims.length) {
+        Promise.all(exitAnims.map(function (a) {
+          return a.finished.then(function () {}, function () {});
+        })).then(settle);
+      } else {
+        settle();
       }
     };
 

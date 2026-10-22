@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /* loongsite 源码级设计契约检查（与 stylelint 配套）。
    1) 断言 design.tokens.json 的 sourceContract 每条声明在 style.css 中精确成立
-   2) 断言 DESIGN.md 的自动契约表与 tokens 一致
+   2) 断言动效分级变量（--m-*）在 CSS 里等于 tokens 的档位值
+   3) 断言 JS 侧动效常数（GX 光斑衰减半径等）等于 tokens
+   4) 断言 DESIGN.md 的自动契约表与 tokens 一致
    用法：
      node scripts/check-design.mjs          # 检查（CI/verify 用）
      node scripts/check-design.mjs --write  # 把契约表写进 DESIGN.md（= npm run design:sync 的底层） */
@@ -13,6 +15,7 @@ import { TOKENS } from '../design.tokens.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CSS_PATH = path.join(ROOT, 'assets', 'css', 'style.css');
+const JS_PATH = path.join(ROOT, 'assets', 'js', 'main.js');
 const DOC_PATH = path.join(ROOT, 'DESIGN.md');
 const MARK_START = '<!-- design-tokens:auto:start -->';
 const MARK_END = '<!-- design-tokens:auto:end -->';
@@ -20,6 +23,15 @@ const WRITE = process.argv.includes('--write');
 
 const fails = [];
 let okCount = 0;
+let checkedCount = 0;
+
+/* 断言：实际值必须与期望值完全一致 */
+function expect(label, got, expected) {
+  checkedCount += 1;
+  if (got === undefined) fails.push(`${label} 缺少声明：期望 ${expected}`);
+  else if (got !== expected) fails.push(`${label} 期望 ${expected}，实为 ${got}`);
+  else okCount += 1;
+}
 
 /* ---------- 1. CSS 源码契约 ---------- */
 const css = readFileSync(CSS_PATH, 'utf8');
@@ -33,21 +45,56 @@ root.walkRules((rule) => {
   rule.walkDecls((d) => m.set(d.prop, d.value.replace(/\s+/g, ' ').trim()));
 });
 
-let contractCount = 0;
 for (const [sel, props] of Object.entries(TOKENS.sourceContract)) {
   if (sel.startsWith('_')) continue;
   const has = declMap.get(sel);
   if (!has) { fails.push(`[契约] 找不到顶层规则 ${sel}`); continue; }
   for (const [prop, expected] of Object.entries(props)) {
-    contractCount += 1;
-    const got = has.get(prop);
-    if (got === undefined) fails.push(`[契约] ${sel} 缺少声明 ${prop}: ${expected}`);
-    else if (got !== expected) fails.push(`[契约] ${sel} 的 ${prop} 期望 ${expected}，实为 ${got}`);
-    else okCount += 1;
+    expect(`[契约] ${sel} 的 ${prop}`, has.get(prop), expected);
   }
 }
 
-/* ---------- 2. DESIGN.md 契约表同步 ---------- */
+/* ---------- 2. 动效分级变量（--m-* 必须等于 tokens 的档位） ---------- */
+const TIER_SEL = { full: ':root', light: 'html[data-motion="light"]' };
+const TIER_PROP = {
+  dur1: '--m-dur-1',
+  dur2: '--m-dur-2',
+  dur3: '--m-dur-3',
+  dist1: '--m-dist-1',
+  dist2: '--m-dist-2',
+  dist3: '--m-dist-3',
+  stagger: '--m-stagger',
+  parallax: '--m-parallax',
+  spot: '--m-spot'
+};
+for (const [tier, sel] of Object.entries(TIER_SEL)) {
+  const has = declMap.get(sel);
+  if (!has) { fails.push(`[分级] 找不到顶层规则 ${sel}`); continue; }
+  for (const [key, prop] of Object.entries(TIER_PROP)) {
+    expect(`[分级] ${sel} 的 ${prop}`, has.get(prop), TOKENS.motion.tiers[tier][key]);
+  }
+}
+const rootDecl = declMap.get(':root');
+if (rootDecl) {
+  expect('[分级] :root 的 --ease-soft', rootDecl.get('--ease-soft'), TOKENS.motion.ease.soft);
+  expect('[分级] :root 的 --ease-snap', rootDecl.get('--ease-snap'), TOKENS.motion.ease.snap);
+}
+
+/* ---------- 3. JS 侧动效常数 ---------- */
+const js = readFileSync(JS_PATH, 'utf8');
+const JS_CHECKS = [
+  ['GX 光斑衰减半径 POOL', /var POOL = (\d+);/, TOKENS.motion.gx.pool],
+  ['GX 棱边接光带 RIM_BAND', /var RIM_BAND = (\d+);/, TOKENS.motion.gx.rimBand]
+];
+for (const [name, re, expected] of JS_CHECKS) {
+  const m = re.exec(js);
+  checkedCount += 1;
+  if (!m) fails.push(`[JS] main.js 里找不到 ${name}`);
+  else if (Number(m[1]) !== Number(expected)) fails.push(`[JS] main.js 的 ${name} 期望 ${expected}，实为 ${m[1]}`);
+  else okCount += 1;
+}
+
+/* ---------- 4. DESIGN.md 契约表同步 ---------- */
 function buildDocBlock() {
   const t = TOKENS;
   const fw = t.fontWeightAllowed.filter((v) => v !== 'inherit').join(' / ');
@@ -63,6 +110,7 @@ function buildDocBlock() {
     ['动效时长', `full ${t.motion.tiers.full.dur1} / ${t.motion.tiers.full.dur2} / ${t.motion.tiers.full.dur3} · 轻量 ${t.motion.tiers.light.dur1} / ${t.motion.tiers.light.dur2} / ${t.motion.tiers.light.dur3}（悬停 / 边框与跨页 / 浮现）`],
     ['动效位移', `full ${t.motion.tiers.full.dist1} / ${t.motion.tiers.full.dist2} / ${t.motion.tiers.full.dist3} · 轻量 ${t.motion.tiers.light.dist1} / ${t.motion.tiers.light.dist2} / ${t.motion.tiers.light.dist3}；错峰 ${t.motion.tiers.full.stagger} / ${t.motion.tiers.light.stagger}`],
     ['动效曲线', `${t.motion.ease.soft}（soft）· ${t.motion.ease.snap}（snap）`],
+    ['光斑', `强度 full ${t.motion.gx.spotFull} · 轻量 ${t.motion.gx.spotLight} · 衰减半径 ${t.motion.gx.pool}px · 棱边接光带 ${t.motion.gx.rimBand}px`],
     ['正文对比度', `≥ ${t.contrastMin}:1`]
   ];
   if (t.renderedContract.footerSticky) {
@@ -93,13 +141,13 @@ if (i0 === -1 || i1 === -1) {
       fails.push('[文档] DESIGN.md 契约表与 design.tokens.json 不一致（运行 npm run design:sync）');
     }
   } else {
+    checkedCount += 1;
     okCount += 1;
   }
 }
 
 /* ---------- 结果 ---------- */
-const contractFails = fails.filter((f) => f.startsWith('[契约]')).length;
-console.log(`[check-design] 源码契约 ${contractCount - contractFails}/${contractCount} 条通过`);
+console.log(`[check-design] 源码契约 ${okCount}/${checkedCount} 条通过`);
 if (fails.length) {
   console.log(`[check-design] 失败 ${fails.length} 项：`);
   for (const f of fails) console.log('  ✗ ' + f);

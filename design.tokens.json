@@ -94,6 +94,14 @@
         "detailHead": "20"
       }
     },
+    "gx": {
+      "_note": "GX 光斑：JS 每帧按光标到玻璃块的距离算衰减系数 --gx-k（1 − d/pool），按光标到块顶边的距离算棱边接光系数 --gx-rim-k；CSS 只负责把这些系数乘上分级强度 --m-spot（光斑强度）。pool / rimBand 是 JS 常数，check-design.mjs 断言 main.js 里与此处一致。",
+      "pool": 76,
+      "rimBand": 90,
+      "spotFull": "1",
+      "spotLight": "0.7",
+      "_spotNote": "spotFull / spotLight 就是 tiers 里的 spot，这里只写一份含义：完整档满强度，轻量档收力到 0.7"
+    },
     "tiers": {
       "full": {
         "dur1": "0.16s",
@@ -226,6 +234,46 @@
     ".contact-card .chip-copy": {
       "background": "var(--panel-strong)",
       "box-shadow": "var(--rim), var(--shadow-sm)"
+    },
+    ".gx-veil": {
+      "opacity": "0"
+    },
+    "html.gx-on .gx.gx-lit > .gx-veil": {
+      "opacity": "calc(var(--gx-k, 1) * 0.55 * var(--m-spot))"
+    },
+    "html.gx-on .gx.gx-lit.gx-hot > .gx-veil": {
+      "opacity": "var(--m-spot)"
+    },
+    "html.gx-on .gx.gx-lit > .gx-veil::before": {
+      "opacity": "calc(var(--gx-rim-k, 0) * var(--m-spot))"
+    },
+    "html.gx-on .gx.gx-lit > .gx-veil::after": {
+      "opacity": "var(--m-spot)"
+    },
+    ".ic-next, .ic-back, .ic-ext": {
+      "transition": "transform var(--dur-1) var(--ease-snap)"
+    },
+    ".btn:hover .ic-next": {
+      "transform": "translateX(calc(var(--m-dist-1) / 2))"
+    },
+    ".btn:hover .ic-ext": {
+      "transform": "translate(calc(var(--m-dist-1) / 2), calc(var(--m-dist-1) / -2))"
+    },
+    ".backlink:hover .ic-back": {
+      "transform": "translateX(calc(var(--m-dist-1) / -2))"
+    },
+    ".prose a, .card-title a": {
+      "background-size": "0% 1px",
+      "text-decoration": "none"
+    },
+    ".prose a:hover, .card-title a:hover": {
+      "background-size": "100% 1px"
+    },
+    ".ic-spin": {
+      "animation": "spin 0.7s linear infinite"
+    },
+    ".ic-ok": {
+      "animation": "ok-pop var(--m-dur-2) var(--ease-snap)"
     }
   },
   "_sourceContractNote": "check-design.mjs 逐条断言这些选择器的声明值；改契约数值 = 改这里 + 改 CSS（两边必须一致）",

@@ -1,0 +1,334 @@
+[
+  {
+    "name": "A0 完整档生效",
+    "pass": true
+  },
+  {
+    "name": "A1 鼠标进入后开启光斑",
+    "pass": true
+  },
+  {
+    "name": "A2 悬停目标同时是 lit 与 hot",
+    "pass": true,
+    "detail": {
+      "hot": true,
+      "lit": true,
+      "k": "1.000",
+      "rimK": "0.823",
+      "mx": "58.0px",
+      "my": "15.9px",
+      "sibK": "0.086",
+      "sibLit": true,
+      "sibHot": false
+    }
+  },
+  {
+    "name": "A3 命中块的光照系数 = 1",
+    "pass": true,
+    "detail": {
+      "k": "1.000"
+    }
+  },
+  {
+    "name": "A4 光斑位置跟着光标",
+    "pass": true,
+    "detail": {
+      "mx": "58.0px",
+      "my": "15.9px"
+    }
+  },
+  {
+    "name": "A5 邻近块也亮但更暗（按距离衰减）",
+    "pass": true,
+    "detail": {
+      "sibK": "0.086",
+      "sibLit": true
+    }
+  },
+  {
+    "name": "A6 光标贴近顶边：棱边接光亮起",
+    "pass": true,
+    "detail": {
+      "rimK": "0.975"
+    }
+  },
+  {
+    "name": "A7 光标离开顶边：棱边接光变暗",
+    "pass": true,
+    "detail": {
+      "rimTop": "0.975",
+      "rimMid": "0.331"
+    }
+  },
+  {
+    "name": "A8 完整档：光斑满强度",
+    "pass": true,
+    "detail": {
+      "op": "1"
+    }
+  },
+  {
+    "name": "A9 高光核（::after）点亮",
+    "pass": true,
+    "detail": {
+      "core": "1"
+    }
+  },
+  {
+    "name": "A10 棱边高光带（::before）有点亮",
+    "pass": true,
+    "detail": {
+      "rim": "0.997"
+    }
+  },
+  {
+    "name": "A11 轻量档：光斑按 --m-spot 收力（0.7）",
+    "pass": true,
+    "detail": {
+      "op": "0.7"
+    }
+  },
+  {
+    "name": "B1 选中滑条存在且是 28px",
+    "pass": true,
+    "detail": {
+      "w": 28,
+      "inline": "28px",
+      "chip": "all",
+      "x": 23.5,
+      "expectX": 23.5,
+      "hasBar": true
+    }
+  },
+  {
+    "name": "B2 滑条落在活动芯片下方",
+    "pass": true,
+    "detail": {
+      "w": 28,
+      "inline": "28px",
+      "chip": "all",
+      "x": 23.5,
+      "expectX": 23.5,
+      "hasBar": true
+    }
+  },
+  {
+    "name": "B3 滑条容器已标记可见",
+    "pass": true
+  },
+  {
+    "name": "B4 筛选后可见/隐藏数量正确",
+    "pass": true,
+    "detail": {
+      "shown": 3,
+      "hidden": 3,
+      "tags": [
+        "scale(1) => scale(0.97)",
+        "scale(1) => scale(0.97)",
+        "scale(1) => scale(0.97)",
+        "translate(0px, 406.75px) => none",
+        "translate(0px, 406.75px) => none",
+        "translate(0px, 406.75px) => none"
+      ],
+      "per": {
+        "0": [
+          "scale(1) => scale(0.97)"
+        ],
+        "1": [
+          "scale(1) => scale(0.97)"
+        ],
+        "2": [
+          "scale(1) => scale(0.97)"
+        ],
+        "3": [
+          "translate(0px, 406.75px) => none"
+        ],
+        "4": [
+          "translate(0px, 406.75px) => none"
+        ],
+        "5": [
+          "translate(0px, 406.75px) => none"
+        ]
+      }
+    }
+  },
+  {
+    "name": "B5 留下的卡片有 FLIP 位移动画",
+    "pass": true,
+    "detail": {
+      "n": 3,
+      "tags": [
+        "scale(1) => scale(0.97)",
+        "scale(1) => scale(0.97)",
+        "scale(1) => scale(0.97)",
+        "translate(0px, 406.75px) => none",
+        "translate(0px, 406.75px) => none",
+        "translate(0px, 406.75px) => none"
+      ]
+    }
+  },
+  {
+    "name": "B6 FLIP 末帧回到 none（卡片精确落位）",
+    "pass": true,
+    "detail": [
+      "translate(0px, 406.75px) => none",
+      "translate(0px, 406.75px) => none",
+      "translate(0px, 406.75px) => none"
+    ]
+  },
+  {
+    "name": "B7 进场卡片有缩放淡入动画",
+    "pass": true,
+    "detail": [
+      "scale(0.97) => none",
+      "translateY(16px) => perspective(950px) rotateX(0deg) rotateY(0deg)"
+    ]
+  },
+  {
+    "name": "B8 进场卡片不是从原点飞进来（位移不超过本地尺度 64px）",
+    "pass": true,
+    "detail": [
+      {
+        "x": 16,
+        "y": 0
+      }
+    ]
+  },
+  {
+    "name": "B9 滑条跟着新芯片移动",
+    "pass": true,
+    "detail": {
+      "inline": "translate3d(23.5px, 40px, 0px)",
+      "x": 23.5,
+      "expectX": 23.5,
+      "hidden": 0,
+      "barW": 28
+    }
+  },
+  {
+    "name": "B10 滑条宽度仍是 28px",
+    "pass": true,
+    "detail": {
+      "inline": "translate3d(23.5px, 40px, 0px)",
+      "x": 23.5,
+      "expectX": 23.5,
+      "hidden": 0,
+      "barW": 28
+    }
+  },
+  {
+    "name": "C1 复制进行中：按钮标记 busy",
+    "pass": true,
+    "detail": {
+      "busy": "1",
+      "spin": true
+    }
+  },
+  {
+    "name": "C2 复制进行中：图标换成转圈",
+    "pass": true,
+    "detail": {
+      "busy": "1",
+      "spin": true
+    }
+  },
+  {
+    "name": "C3 复制成功：图标变成对勾",
+    "pass": true,
+    "detail": {
+      "isDone": true,
+      "ok": true,
+      "spin": false,
+      "label": "已复制"
+    }
+  },
+  {
+    "name": "C4 复制成功：按钮进入完成态",
+    "pass": true,
+    "detail": {
+      "isDone": true,
+      "ok": true,
+      "spin": false,
+      "label": "已复制"
+    }
+  },
+  {
+    "name": "C5 复制成功：读屏标签同步",
+    "pass": true,
+    "detail": {
+      "isDone": true,
+      "ok": true,
+      "spin": false,
+      "label": "已复制"
+    }
+  },
+  {
+    "name": "C6 1.6 秒后按钮复原",
+    "pass": true,
+    "detail": {
+      "ok": false,
+      "spin": false,
+      "isDone": false,
+      "label": "复制 1820100714@qq.com",
+      "icon": true
+    }
+  },
+  {
+    "name": "C7 复原后标签还原",
+    "pass": true,
+    "detail": {
+      "ok": false,
+      "spin": false,
+      "isDone": false,
+      "label": "复制 1820100714@qq.com",
+      "icon": true
+    }
+  },
+  {
+    "name": "D1 方向图标带语义类（可做微动）",
+    "pass": true,
+    "detail": {
+      "next": true,
+      "back": true,
+      "ext": true
+    }
+  },
+  {
+    "name": "D5 满档：按钮箭头悬停右推 3px",
+    "pass": true,
+    "detail": {
+      "transform": "matrix(1, 0, 0, 1, 3, 0)"
+    }
+  },
+  {
+    "name": "D6 轻档：箭头轻推减半（1.5px）",
+    "pass": true,
+    "detail": {
+      "transform": "matrix(1, 0, 0, 1, 1.5, 0)"
+    }
+  },
+  {
+    "name": "D2 加载指示有转圈动画",
+    "pass": true,
+    "detail": {
+      "anim": "spin"
+    }
+  },
+  {
+    "name": "D3 正文链接有下划线扫出效果（初始宽度 0）",
+    "pass": true,
+    "detail": {
+      "size": "0% 1px",
+      "deco": "none",
+      "x": 500,
+      "y": 396
+    }
+  },
+  {
+    "name": "D4 悬停后下划线扫出（宽度 100%）",
+    "pass": true,
+    "detail": {
+      "size": "100% 1px"
+    }
+  }
+]

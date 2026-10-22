@@ -199,6 +199,7 @@ def main():
     args = ap.parse_args()
     port = args.port
 
+    import os
     from patchright.sync_api import sync_playwright
     from PIL import Image, ImageChops
 
@@ -231,7 +232,12 @@ def main():
     font_checks_light = 0
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, channel="chrome")
+        # 无 branded Chrome 的环境（CI / 容器）可用 LOONGSITE_CHROME 指向本地 Chromium
+        chrome_exe = os.environ.get("LOONGSITE_CHROME")
+        browser = p.chromium.launch(
+            headless=True,
+            **({"executable_path": chrome_exe} if chrome_exe else {"channel": "chrome"})
+        )
         # patchright evaluate 只接受单个参数：把选择器表一次性传进去
         measure = (
             "([HS, PS, AS, RC, FC, UG]) => {"

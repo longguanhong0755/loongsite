@@ -1160,6 +1160,34 @@ html[data-theme="dark"] .ic-gold { color: #F3BE49; }
 
 .btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
 
+/* ---------- 微交互：按钮 / 链接 / 图标 / 加载 ----------
+   统一原则（沿用卡片那条）：悬停不整体改块色、不挪动布局，
+   动的是块里的图标、链接的下划线这类"局部"元素。
+   图标轻推幅度 = --m-dist-1 的一半（满档 3px、轻档 1.5px），不另立一套数字。 */
+.ic-next, .ic-back, .ic-ext { transition: transform var(--dur-1) var(--ease-snap); }
+.btn:hover .ic-next { transform: translateX(calc(var(--m-dist-1) / 2)); }
+.btn:hover .ic-ext { transform: translate(calc(var(--m-dist-1) / 2), calc(var(--m-dist-1) / -2)); }
+.backlink:hover .ic-back { transform: translateX(calc(var(--m-dist-1) / -2)); }
+
+/* 行内链接：下划线从左往右扫出来（代替原来"直接变色"的下划线） */
+.prose a, .card-title a {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  text-decoration: none;
+  transition: background-size var(--dur-2) var(--ease-soft), color var(--dur-1) var(--ease-soft);
+}
+.prose a:hover, .card-title a:hover { background-size: 100% 1px; }
+
+/* 加载指示（复制等异步操作进行中）：循环指示器，转速固定不随档位变 */
+.ic-spin { animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(1turn); } }
+
+/* 复制成功：对勾弹一下 */
+.ic-ok { animation: ok-pop var(--m-dur-2) var(--ease-snap); }
+@keyframes ok-pop { from { opacity: 0; transform: scale(0.55); } }
+
 /* ---------- 徽章 / 标签 ---------- */
 .badge {
   display: inline-flex;
@@ -1268,7 +1296,6 @@ html[data-theme="dark"] .ic-gold { color: #F3BE49; }
 .card-meta { display: flex; align-items: center; gap: 8px; }
 
 .card-title { font-size: 1.125rem; margin-top: 4px; }
-.card-title a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 
 .card-subtitle { color: var(--text-3); font-size: 13px; font-family: var(--mono); letter-spacing: 0.04em; }
 
@@ -1647,8 +1674,7 @@ pre.code .line:hover { background: var(--panel-inset); }
 .prose h3 { font-size: 1.125rem; }
 .prose h2, .prose h3 { scroll-margin-top: 88px; }
 .prose p { margin: 0.85em 0; }
-.prose a { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); color: var(--text); }
-.prose a:hover { text-decoration-color: var(--text); }
+.prose a { color: var(--text); }
 .prose ul, .prose ol { padding-left: 1.4em; margin: 0.85em 0; }
 .prose li { margin: 0.35em 0; }
 .prose li::marker { color: var(--text-3); }
@@ -1969,17 +1995,37 @@ html[data-vt-dir="back"]:not([data-vt-morph])::view-transition-new(root) { anima
   transition: opacity var(--dur-2) var(--ease-soft);
   background-repeat: no-repeat;
   background-clip: padding-box, border-box;
+  box-shadow: inset 0 1px 0 var(--gx-rim);
   background-image:
     /* 光斑剖面：实心核心 + 柔尾（同一加白上限下，观感比线性衰减明显得多） */
     radial-gradient(4.6rem circle at var(--mx, 50%) var(--my, 50%), var(--gx-spot) 0 38%, transparent 92%),
     radial-gradient(7rem circle at var(--mx, 50%) var(--my, 50%), var(--gx-edge) 0 32%, transparent 90%);
 }
+/* 棱边接光：顶边在光标附近亮起来，横向跟着光标走。
+   亮度由 JS 按"光标离顶边多近"写进 --gx-rim-k，光标在块中间时这条边就不亮。 */
 .gx-veil::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 1px 0 var(--gx-rim);
+  pointer-events: none;
+  background: radial-gradient(8rem circle at var(--mx, 50%) 0, var(--gx-rim), transparent 72%);
+  background-size: 100% 2px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease-soft);
+}
+/* 高光核：指针正下方那一小块更亮，像玻璃上落了一个焦点 */
+.gx-veil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(1.4rem circle at var(--mx, 50%) var(--my, 50%), var(--gx-rim), transparent 72%);
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease-soft);
 }
 
 .gx-tilt {
@@ -1987,16 +2033,19 @@ html[data-vt-dir="back"]:not([data-vt-morph])::view-transition-new(root) { anima
 }
 .hero-card.gx-tilt, .skill-card.gx-tilt { transition: transform var(--dur-2) var(--ease-soft), border-color var(--dur-2) var(--ease-soft); }
 
-/* 显影由 JS 决定（首次收到鼠标移动时给 <html> 挂 .gx-on，触屏设备永不激活） */
-html.gx-on .gx.gx-lit > .gx-veil { opacity: 1; }
-html.gx-on .gx.gx-lit:not(.gx-hot) > .gx-veil { opacity: 0.55; }   /* 相邻余光 */
+/* 显影由 JS 决定（首次收到鼠标移动时给 <html> 挂 .gx-on，触屏设备永不激活）
+   --gx-k 是按距离衰减的系数（光标离块越远越暗），--m-spot 是分级强度系数 */
+html.gx-on .gx.gx-lit > .gx-veil { opacity: calc(var(--gx-k, 1) * 0.55 * var(--m-spot)); }
+html.gx-on .gx.gx-lit.gx-hot > .gx-veil { opacity: var(--m-spot); }
+html.gx-on .gx.gx-lit > .gx-veil::before { opacity: calc(var(--gx-rim-k, 0) * var(--m-spot)); }
+html.gx-on .gx.gx-lit > .gx-veil::after { opacity: var(--m-spot); }
 /* 键盘 Tab 聚焦到某个玻璃块内部时，也给一束柔光（居中）。
    鼠标点击也会让按钮获得焦点，但那束光会一直留在按钮中心；只在键盘焦点（:focus-visible）下点亮 */
-.gx:focus-within > .gx-veil { opacity: 1; }
+.gx:focus-within > .gx-veil { opacity: var(--m-spot); }
 @supports selector(:has(*)) {
   .gx:focus-within > .gx-veil { opacity: 0; }
   .gx:focus-visible > .gx-veil,
-  .gx:has(:focus-visible) > .gx-veil { opacity: 1; }
+  .gx:has(:focus-visible) > .gx-veil { opacity: var(--m-spot); }
 }
 
 /* 实心反色面（主按钮 / 选中筛选 / 跳转链接）：光斑换成「薄光上限」版本——

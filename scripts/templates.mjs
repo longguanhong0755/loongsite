@@ -82,7 +82,7 @@ export const ICONS = {
 // 品牌彩色标需要各自的 viewBox（Gmail 88:66、QQ 121:144）；个别需要视觉补偿尺寸与主题色类名
 const ICON_VB = { gmail: '52 42 88 66', qq: '0 0 121 144' };
 const ICON_SCALE = { gmail: 1.12, qq: 1.06 };
-const ICON_CLASS = { ldcstore: 'ic-gold' };
+const ICON_CLASS = { ldcstore: 'ic-gold', chevronRight: 'ic-next', arrowLeft: 'ic-back', external: 'ic-ext' };
 
 /* 真实折射滤镜（移植自 glassfx，MIT：github.com/SquareMediaGroup/glassfx）
    —— feDisplacementMap 链把背景真正弯折；三个位移强度 44/48/52 轻微错开 = 细色散。 */

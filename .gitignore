@@ -42,3 +42,6 @@ scripts/deploy.sh
 HANDOFF_AGENT.md
 HANDOFF_SERVER_AGENT.md
 _deploy-internal.md
+
+# 交接包（含凭据，绝不入库）
+_handoff/
