@@ -1,0 +1,252 @@
+{
+  "results": [
+    {
+      "name": "首页→项目卡：写入 morph",
+      "pass": true,
+      "detail": {
+        "dir": null,
+        "morph": "proj-guessword",
+        "htmlDir": null,
+        "htmlMorph": null
+      }
+    },
+    {
+      "name": "首页→项目卡：跨栏目不给方向",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "旧页：卡片拿到共享元素名",
+      "pass": true,
+      "detail": {
+        "card": "proj-guessword",
+        "title": "none"
+      }
+    },
+    {
+      "name": "旧页：卡内标题不再单独飞（父子同名会打架）",
+      "pass": true,
+      "detail": {
+        "card": "proj-guessword",
+        "title": "none"
+      }
+    },
+    {
+      "name": "列表→详情：方向 = fwd",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-guessword",
+        "htmlDir": null,
+        "htmlMorph": "proj-guessword"
+      }
+    },
+    {
+      "name": "列表→详情：morph = proj-guessword",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-guessword",
+        "htmlDir": null,
+        "htmlMorph": "proj-guessword"
+      }
+    },
+    {
+      "name": "详情→列表：方向 = back",
+      "pass": true,
+      "detail": {
+        "dir": "back",
+        "morph": null,
+        "htmlDir": "fwd",
+        "htmlMorph": "proj-guessword"
+      }
+    },
+    {
+      "name": "详情→列表：不是卡片展开（无 morph）",
+      "pass": true,
+      "detail": {
+        "dir": "back",
+        "morph": null,
+        "htmlDir": "fwd",
+        "htmlMorph": "proj-guessword"
+      }
+    },
+    {
+      "name": "详情页「下一个」：方向 = fwd",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-image2strokes",
+        "htmlDir": "fwd",
+        "htmlMorph": "proj-guessword"
+      }
+    },
+    {
+      "name": "详情页「下一个」：morph 到下一个项目",
+      "pass": true,
+      "detail": "proj-image2strokes"
+    },
+    {
+      "name": "详情页「上一个」：方向 = back",
+      "pass": true,
+      "detail": {
+        "dir": "back",
+        "morph": "proj-ui-components",
+        "htmlDir": "fwd",
+        "htmlMorph": "proj-guessword"
+      }
+    },
+    {
+      "name": "详情页「上一个」：morph 到上一个项目",
+      "pass": true,
+      "detail": "proj-ui-components"
+    },
+    {
+      "name": "博客→项目（跨栏目）：无方向",
+      "pass": true,
+      "detail": {
+        "dir": null,
+        "morph": null,
+        "htmlDir": "back",
+        "htmlMorph": "proj-ui-components"
+      }
+    },
+    {
+      "name": "博客→项目（跨栏目）：无 morph",
+      "pass": true,
+      "detail": {
+        "dir": null,
+        "morph": null,
+        "htmlDir": "back",
+        "htmlMorph": "proj-ui-components"
+      }
+    },
+    {
+      "name": "新页：data-vt-dir = fwd",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-guessword",
+        "hero": "proj-guessword",
+        "h1": "none",
+        "leftDir": null,
+        "leftMorph": null
+      }
+    },
+    {
+      "name": "新页：data-vt-morph = proj-guessword",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-guessword",
+        "hero": "proj-guessword",
+        "h1": "none",
+        "leftDir": null,
+        "leftMorph": null
+      }
+    },
+    {
+      "name": "新页：详情容器拿到共享元素名",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-guessword",
+        "hero": "proj-guessword",
+        "h1": "none",
+        "leftDir": null,
+        "leftMorph": null
+      }
+    },
+    {
+      "name": "新页：标题不再单独飞",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-guessword",
+        "hero": "proj-guessword",
+        "h1": "none",
+        "leftDir": null,
+        "leftMorph": null
+      }
+    },
+    {
+      "name": "新页：读完即清（不留给下一页）",
+      "pass": true,
+      "detail": {
+        "dir": "fwd",
+        "morph": "proj-guessword",
+        "hero": "proj-guessword",
+        "h1": "none",
+        "leftDir": null,
+        "leftMorph": null
+      }
+    },
+    {
+      "name": "拖拽中：生成玻璃块",
+      "pass": true,
+      "detail": {
+        "ghost": true,
+        "dragging": true,
+        "path": "/"
+      }
+    },
+    {
+      "name": "拖拽中：<html> 进入 nav-dragging",
+      "pass": true,
+      "detail": {
+        "ghost": true,
+        "dragging": true,
+        "path": "/"
+      }
+    },
+    {
+      "name": "拖拽中：不发生跳转",
+      "pass": true,
+      "detail": {
+        "ghost": true,
+        "dragging": true,
+        "path": "/"
+      }
+    },
+    {
+      "name": "拖到目标：目标栏目高亮",
+      "pass": true,
+      "detail": {
+        "drop": true,
+        "dropHref": "/blog/",
+        "path": "/"
+      }
+    },
+    {
+      "name": "拖到目标：松手前仍不跳转",
+      "pass": true,
+      "detail": {
+        "drop": true,
+        "dropHref": "/blog/",
+        "path": "/"
+      }
+    },
+    {
+      "name": "拖拽松手：跳到落点栏目",
+      "pass": true,
+      "detail": "/blog/"
+    },
+    {
+      "name": "拖拽结束：玻璃块与高亮都清干净",
+      "pass": true,
+      "detail": {
+        "ghost": false,
+        "dragging": false,
+        "drop": false
+      }
+    },
+    {
+      "name": "拖到空白处松手：不跳转",
+      "pass": true,
+      "detail": {
+        "before": "/",
+        "after": "/"
+      }
+    }
+  ]
+}

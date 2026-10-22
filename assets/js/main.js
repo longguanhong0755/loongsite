@@ -79,6 +79,188 @@
   })();
   window.LSMotion = Motion;
 
+  /* ---------- 关系化跨页过渡：点击时决定"这两页之间怎么过渡" ----------
+     三种关系：跨栏目（默认：整页从上方落位 + 首屏块上浮）、
+     列表→详情（卡片展开成详情容器）、同栏目内（方向化横向滑入）。
+     判断结果写进 sessionStorage，新页面在首绘前读走（head 内联脚本），CSS 据此选过渡。 */
+  function isListPath(p) { return /^\/[^/]+\/$/.test(p || ''); }
+  function planTransition(a) {
+    var url;
+    try { url = new URL(a.href, location.href); } catch (e) { return null; }
+    var path = url.pathname;
+    if (path === location.pathname) return null;          /* 同页锚点 / 刷新 */
+    var plan = { dir: '', morph: '' };
+    var declared = a.getAttribute('data-vt');
+    if (declared === 'fwd' || declared === 'back') plan.dir = declared;
+    var fromSec = (location.pathname.split('/')[1] || '');
+    var toSec = (path.split('/')[1] || '');
+    if (!plan.dir && fromSec && fromSec === toSec) {
+      /* 同栏目内：进详情是前进，回列表是返回 */
+      plan.dir = (isListPath(path) && !isListPath(location.pathname)) ? 'back' : 'fwd';
+    }
+    var card = a.closest ? a.closest('[data-morph]') : null;
+    if (card) {
+      var name = card.getAttribute('data-morph') || '';
+      var slug = name.replace(/^proj-/, '');
+      if (slug && (path === '/projects/' + slug || path === '/projects/' + slug + '/')) plan.morph = name;
+    }
+    return plan;
+  }
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    if (a.target && a.target !== '_self') return;
+    if (a.hasAttribute('download')) return;
+    var url;
+    try { url = new URL(a.href, location.href); } catch (err) { return; }
+    if (url.origin !== location.origin) return;
+    var plan = planTransition(a);
+    if (!plan) return;
+    try {
+      if (plan.dir) sessionStorage.setItem('vt-dir', plan.dir); else sessionStorage.removeItem('vt-dir');
+      if (plan.morph) {
+        sessionStorage.setItem('vt-morph', plan.morph);
+        /* 旧页面也��给这张卡挂上共享元素名，浏览器才能把它展开成新页的详情容器；
+           卡内标题同时取消单独飞行（父子同名会打架） */
+        var st = document.createElement('style');
+        st.textContent = '[data-morph="' + plan.morph + '"]{view-transition-name:' + plan.morph + ';}'
+          + '[data-morph="' + plan.morph + '"] .vt-name{view-transition-name:none;}';
+        document.head.appendChild(st);
+      } else {
+        sessionStorage.removeItem('vt-morph');
+      }
+    } catch (err2) {}
+  }, true);
+
+  /* ---------- 导航玻璃块拖拽：按住活动底板拖到别的栏目，松手才切换 ----------
+     拖动时那块玻璃脱离文字跟着手指走，落在哪个栏目哪个栏目高亮；
+     手指抬起才跳转（拖一半松手落回原处 = 什么都不发生）。 */
+  (function () {
+    var navLinks = document.querySelectorAll('.nav-links .nav-link');
+    var active = document.querySelector('.nav-links .nav-link.is-active');
+    var nav = active && active.closest ? active.closest('.nav') : null;
+    var row = active && active.closest ? active.closest('.nav-links') : null;
+    if (!active || !nav || !row || navLinks.length < 2) return;
+    active.setAttribute('title', '按住玻璃块拖到其它栏目，松开即切换');
+    for (var i = 0; i < navLinks.length; i++) navLinks[i].setAttribute('draggable', 'false');
+
+    var down = false, dragging = false, suppress = false, programmatic = false;
+    var pid = 0, sx0 = 0, sy0 = 0, gx0 = 0, px = 0;
+    var baseX = 0, baseY = 0, minX = 0, maxX = 0;
+    var ghost = null, drop = null;
+    var THRESH = 6;
+
+    function findLink(x, y) {
+      var hit = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
+      var link = hit && hit.closest ? hit.closest('.nav-link') : null;
+      return link && link !== active && link.closest('.nav-links') ? link : null;
+    }
+    function clearDrop() {
+      if (drop) drop.classList.remove('is-drop');
+      drop = null;
+    }
+    function removeGhost() {
+      if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      ghost = null;
+    }
+    function finish() {
+      removeGhost();
+      clearDrop();
+      root.classList.remove('nav-dragging');
+      if (pid) { try { active.releasePointerCapture(pid); } catch (e) {} pid = 0; }
+      down = false;
+      dragging = false;
+    }
+    function paint() {
+      if (!ghost) return;
+      var x = Math.max(minX, Math.min(maxX, px - gx0));
+      ghost.style.transform = 'translate3d(' + (x - baseX) + 'px,0,0) scale(1.02)';
+    }
+    function onDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (down) return;
+      down = true;
+      dragging = false;
+      sx0 = px = e.clientX;
+      sy0 = e.clientY;
+    }
+    function onMove(e) {
+      if (!down) return;
+      if (!dragging) {
+        var dx = e.clientX - sx0, dy = e.clientY - sy0;
+        if (dx * dx + dy * dy < THRESH * THRESH) return;
+        dragging = true;
+        suppress = true;
+        var r0 = active.getBoundingClientRect();
+        var nr = nav.getBoundingClientRect();
+        var rr = row.getBoundingClientRect();
+        gx0 = sx0 - r0.left;
+        baseX = r0.left - nr.left;
+        baseY = r0.top - nr.top;
+        minX = rr.left - nr.left;
+        maxX = rr.right - nr.left - r0.width;
+        ghost = document.createElement('i');
+        ghost.className = 'nav-drag';
+        ghost.setAttribute('aria-hidden', 'true');
+        ghost.style.left = baseX + 'px';
+        ghost.style.top = baseY + 'px';
+        ghost.style.width = r0.width + 'px';
+        ghost.style.height = r0.height + 'px';
+        nav.appendChild(ghost);
+        root.classList.add('nav-dragging');
+        try { active.setPointerCapture(e.pointerId); pid = e.pointerId; } catch (err) {}
+      }
+      px = e.clientX;
+      Motion.frame('navdrag', paint);
+      var link = findLink(e.clientX, e.clientY);
+      if (link !== drop) {
+        clearDrop();
+        drop = link;
+        if (drop) drop.classList.add('is-drop');
+      }
+    }
+    function onUp(e) {
+      if (!down) return;
+      if (!dragging) { down = false; return; }
+      var to = findLink(e.clientX, e.clientY);
+      if (!to) { finish(); window.setTimeout(function () { suppress = false; }, 0); return; }
+      /* 玻璃先滑到目标栏目，再跳转：一眼看清"要切到哪儿" */
+      var tr = to.getBoundingClientRect();
+      var nr = nav.getBoundingClientRect();
+      if (ghost) {
+        ghost.style.transition = 'transform ' + (Motion.dur(1) + 40) + 'ms ' + 'cubic-bezier(0.2, 0.7, 0.2, 1)';
+        ghost.style.transform = 'translate3d(' + (tr.left - nr.left - baseX) + 'px,' + (tr.top - nr.top - baseY) + 'px,0) scale(1)';
+      }
+      window.setTimeout(function () {
+        finish();
+        programmatic = true;
+        to.click();
+        window.setTimeout(function () { programmatic = false; suppress = false; }, 500);
+      }, Motion.dur(1) + 60);
+    }
+    function onCancel() {
+      if (!down) return;
+      var wasDrag = dragging;
+      finish();
+      if (wasDrag) window.setTimeout(function () { suppress = false; }, 0);
+    }
+    active.addEventListener('pointerdown', onDown);
+    document.addEventListener('pointermove', onMove, { passive: true });
+    document.addEventListener('pointerup', onUp, { passive: true });
+    document.addEventListener('pointercancel', onCancel, { passive: true });
+    document.addEventListener('click', function (e) {
+      if (programmatic) { programmatic = false; return; }
+      if (suppress) {
+        e.preventDefault();
+        e.stopPropagation();
+        suppress = false;
+      }
+    }, true);
+    window.addEventListener('blur', onCancel);
+  })();
+
   /* 主题切换：从主题按钮位置做整页圆形揭示（View Transition）。
      旧页面先冻结成快照，换主题后用 520ms 的 clip-path 圆揭开新页面；
      换肤期间 <html> 带 .vt-theme，悬停熄灯逻辑会跳过（浮层会伪造 pointerleave）。

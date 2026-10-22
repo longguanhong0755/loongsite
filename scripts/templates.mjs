@@ -160,6 +160,13 @@ const MOTION = `(function(){var d=document.documentElement,t='full';try{var q=(l
    只写序号 --rise-i，错峰步长交给令牌（--m-stagger）。 */
 const ARRIVAL = `(function(){var d=document.documentElement;window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition)return;d.classList.add('vt-active','vt-arrive');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal'),n=0;for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');el.style.setProperty('--rise-i',String(n));n++;}}var settle=function(){d.classList.add('vt-settle');};var vt=e.viewTransition;if(vt.finished&&vt.finished.then){vt.finished.then(settle,settle);}else{setTimeout(settle,500);}},{once:true});})();`;
 
+/* 关系化过渡的交接：旧页面点击时把"这次要做什么过渡"写进 sessionStorage，
+   新页面在首绘前读出来写进 <html> 的 data-vt-dir / data-vt-morph，CSS 再据此选过渡。
+   必须抢在快照之前（head 内联脚本），晚一步就是"新页用默认过渡落位、旧页已经飞完了"。
+   顺带把 morph 目标的 view-transition-name 用一条 <style> 挂上——
+   目标元素在 body 里，head 脚本那时还拿不到它，但 CSS 选择器可以等它解析完再生效。 */
+const ROUTE = `(function(){var d=document.documentElement;try{var dir=sessionStorage.getItem('vt-dir');var morph=sessionStorage.getItem('vt-morph');sessionStorage.removeItem('vt-dir');sessionStorage.removeItem('vt-morph');if(dir)d.setAttribute('data-vt-dir',dir);if(morph){d.setAttribute('data-vt-morph',morph);var st=document.createElement('style');st.textContent='[data-morph="'+morph+'"]{view-transition-name:'+morph+';}';document.head.appendChild(st);}}catch(e){}})();`;
+
 export function layout({ profile, title, description, current = '/', path = '/', content, bodyClass = '' }) {
   const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name} · ${profile.title}`;
   const desc = description || profile.description;
@@ -186,6 +193,7 @@ export function layout({ profile, title, description, current = '/', path = '/',
 <link rel="stylesheet" href="/assets/css/style.css?v=${CSS_V}">
 <script>${NO_FLASH}</script>
 <script>${MOTION}</script>
+<script>${ROUTE}</script>
 <script>${ARRIVAL}</script>
 <script type="speculationrules">{"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/sub/*"}}]},"eagerness":"moderate"}]}</script>
 </head>
@@ -267,7 +275,7 @@ export function projectCard(p, idx = 0, total = 0) {
     : `<div class="card-actions">
         <a class="btn btn-sm btn-ghost" href="/projects/${p.slug}">查看简介${icon('chevronRight', 15)}</a>
       </div>`;
-  return `<article class="project-card glass corners reveal" data-visibility="${esc(p.visibility)}">
+  return `<article class="project-card glass corners reveal" data-visibility="${esc(p.visibility)}" data-morph="proj-${esc(p.slug)}">
     <div class="card-top">
       <div class="card-icon">${icon(p.icon || 'box', 22)}</div>
       <div class="card-meta">${meta}</div>

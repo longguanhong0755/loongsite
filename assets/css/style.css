@@ -407,6 +407,30 @@ main > .page-head ~ .section:first-of-type { margin-top: 48px; }
   font-weight: 600;
 }
 
+/* ---------- 导航玻璃块拖拽：按住活动底板拖到别的栏目，松手才切换 ----------
+   拖动时那块玻璃（.nav-drag）脱离文字、跟着手指走；落点栏目高亮；
+   手指抬起才真正跳转（拖到一半松手落回原处就什么都不发生）。
+   .nav-link 抬到 z-index 1，玻璃在 z-index 0，文字不被盖住。 */
+.nav { position: relative; touch-action: pan-y; }
+.nav-link { position: relative; z-index: 1; -webkit-user-drag: none; }
+.nav-link.is-drop { color: var(--text); }
+html.nav-dragging .nav-link.is-active,
+html.nav-dragging .nav-link.is-active:hover,
+html.nav-dragging .nav-link:hover { background: transparent; box-shadow: none; }
+html.nav-dragging .nav-link.is-active { color: var(--text-2); }
+html.nav-dragging, html.nav-dragging body, html.nav-dragging .nav-link { cursor: grabbing; }
+html.nav-dragging body { -webkit-user-select: none; user-select: none; }
+.nav-drag {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-strong);
+  box-shadow: var(--rim), var(--shadow-md);
+  will-change: transform;
+}
+
 .nav-actions {
   margin-left: auto;
   display: flex;
@@ -1853,6 +1877,28 @@ html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
    回到 root 快照里一起被圆形裁剪（独立快照不受 clip 影响，会先在旧页上露出新色） */
 html.vt-theme::view-transition-new(*) { animation: none; }
 html.vt-theme .nav, html.vt-theme .vt-name { view-transition-name: none; }
+
+/* ---------- 关系化跨页过渡（按"这两页是什么关系"选过渡） ----------
+   跨栏目（首页↔栏目）：上面那条整页从上方落位 + 首屏块随后上浮
+   列表→详情：卡片展开成详情容器（共享元素 morph），根层只淡入，不跟它抢镜头
+   同栏目内：方向化横向滑入（往前一步 / 返回上一层）
+   关系由点击时写入的 data-vt-dir / data-vt-morph 决定（head 内联脚本先写，样式再取） */
+html[data-vt-morph]::view-transition-old(root) { animation: vt-morph-out var(--m-dur-2) var(--ease-soft) both; }
+html[data-vt-morph]::view-transition-new(root) { animation: vt-morph-in var(--m-dur-3) var(--ease-soft) both; }
+@keyframes vt-morph-out { to { opacity: 0; } }
+@keyframes vt-morph-in { from { opacity: 0; } }
+/* morph 时标题不再单独飞：它已经是卡片/详情容器的一部分，父子同名会打架 */
+html[data-vt-morph] .vt-name { view-transition-name: none; }
+
+/* morph 优先于方向：卡片展开时根层只淡入，横向滑动会和它抢镜头 */
+html[data-vt-dir="fwd"]:not([data-vt-morph])::view-transition-old(root) { animation: vt-out-left var(--m-dur-2) var(--ease-soft) both; }
+html[data-vt-dir="fwd"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-right var(--m-dur-3) var(--ease-soft) both; }
+html[data-vt-dir="back"]:not([data-vt-morph])::view-transition-old(root) { animation: vt-out-right var(--m-dur-2) var(--ease-soft) both; }
+html[data-vt-dir="back"]:not([data-vt-morph])::view-transition-new(root) { animation: vt-in-left var(--m-dur-3) var(--ease-soft) both; }
+@keyframes vt-out-left { to { opacity: 0; transform: translateX(calc(var(--m-dist-3) * -1)); } }
+@keyframes vt-in-right { from { opacity: 0; transform: translateX(var(--m-dist-3)); } }
+@keyframes vt-out-right { to { opacity: 0; transform: translateX(var(--m-dist-3)); } }
+@keyframes vt-in-left { from { opacity: 0; transform: translateX(calc(var(--m-dist-3) * -1)); } }
 
 
 /* ---------- 玻璃悬停（GX v3）：一束全局光 + 玻璃显影 + 棱边 + 轻微倾斜 ---------- */

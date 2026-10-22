@@ -608,7 +608,7 @@ function renderProjectPage(p) {
   const nextP = projects[(idx + 1) % projects.length];
 
   const content = `
-    <div class="page-head container" id="top">
+    <div class="page-head container" id="top" data-morph="proj-${esc(p.slug)}">
       <a class="backlink" href="/projects/">${icon('arrowLeft', 15)}返回项目列表</a>
       <div class="meta-row">
         ${isPublic ? badge('公开项目', 'public') : badge('私有项目', 'private')}
@@ -649,12 +649,12 @@ ${repoCard}
 
     <section class="section container">
       <div class="pager reveal">
-        <a class="pager-item" href="/projects/${prevP.slug}">
+        <a class="pager-item" href="/projects/${prevP.slug}" data-vt="back" data-morph="proj-${esc(prevP.slug)}">
           <span class="pager-k">${icon('arrowLeft', 13)}上一个</span>
           <span class="pager-v">${esc(prevP.name)}</span>
           <span class="pager-s">${esc(prevP.subtitle)}</span>
         </a>
-        <a class="pager-item pager-next" href="/projects/${nextP.slug}">
+        <a class="pager-item pager-next" href="/projects/${nextP.slug}" data-vt="fwd" data-morph="proj-${esc(nextP.slug)}">
           <span class="pager-k">下一个${icon('chevronRight', 13)}</span>
           <span class="pager-v">${esc(nextP.name)}</span>
           <span class="pager-s">${esc(nextP.subtitle)}</span>
