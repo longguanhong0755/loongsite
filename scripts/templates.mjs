@@ -146,10 +146,19 @@ const NAV = [
 
 const NO_FLASH = `(function(){var d=document.documentElement;d.classList.add('js');try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','light');}})();`;
 
+/* 动效分级必须在首绘前定档：CSS 的 --m-* 令牌按 html[data-motion] 取值，
+   晚一步首屏就会用错一档（看到完整动效再突然变轻）。
+   light 不是关掉效果：时长更短、位移更小、视差关掉，签名效果照样在。
+   判据只取"明确的约束"，不拿普通笔记本的 4 核 / 4GB 当理由降级：
+     系统减动效 → light；省流量或 2G-慢网 → light；核心数 ≤2 或内存 ≤2GB → light；
+   ?motion=full|light 人工覆盖并记住（localStorage）。 */
+const MOTION = `(function(){var d=document.documentElement,t='full';try{var q=(location.search.match(/[?&]motion=(full|light)/)||[])[1];if(q){t=q;try{localStorage.setItem('motion',q);}catch(e){}}else{var s=null;try{s=localStorage.getItem('motion');}catch(e){}if(s==='full'||s==='light'){t=s;}else if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){t='light';}else{var n=navigator,c=n.connection||{};var weak=!!c.saveData||/^(slow-2g|2g)$/.test(c.effectiveType||'')||!!(n.hardwareConcurrency&&n.hardwareConcurrency<=2)||!!(n.deviceMemory&&n.deviceMemory<=2);if(weak){t='light';}}}}catch(e){t='full';}d.setAttribute('data-motion',t);})();`;
+
 /* 到达编排必须在内联脚本里注册：defer 的 main.js 可能晚于跨页快照执行，
    那样 pagereveal 里的首屏标记会错过首帧，快照就是空白。这里只做首屏块的
-   就位/错峰和落位后的上浮，其余交互仍由 main.js 接管。 */
-const ARRIVAL = `(function(){var d=document.documentElement;window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition)return;d.classList.add('vt-active','vt-arrive');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal'),n=0;for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');el.style.setProperty('--rise-d',(n*0.028).toFixed(3)+'s');n++;}}var settle=function(){d.classList.add('vt-settle');};var vt=e.viewTransition;if(vt.finished&&vt.finished.then){vt.finished.then(settle,settle);}else{setTimeout(settle,500);}},{once:true});})();`;
+   就位/错峰和落位后的上浮，其余交互仍由 main.js 接管。
+   只写序号 --rise-i，错峰步长交给令牌（--m-stagger）。 */
+const ARRIVAL = `(function(){var d=document.documentElement;window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition)return;d.classList.add('vt-active','vt-arrive');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal'),n=0;for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');el.style.setProperty('--rise-i',String(n));n++;}}var settle=function(){d.classList.add('vt-settle');};var vt=e.viewTransition;if(vt.finished&&vt.finished.then){vt.finished.then(settle,settle);}else{setTimeout(settle,500);}},{once:true});})();`;
 
 export function layout({ profile, title, description, current = '/', path = '/', content, bodyClass = '' }) {
   const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name} · ${profile.title}`;
@@ -176,6 +185,7 @@ export function layout({ profile, title, description, current = '/', path = '/',
 <link rel="apple-touch-icon" href="/assets/img/avatar-256.jpg">
 <link rel="stylesheet" href="/assets/css/style.css?v=${CSS_V}">
 <script>${NO_FLASH}</script>
+<script>${MOTION}</script>
 <script>${ARRIVAL}</script>
 <script type="speculationrules">{"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/sub/*"}}]},"eagerness":"moderate"}]}</script>
 </head>

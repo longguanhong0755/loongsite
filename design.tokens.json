@@ -68,6 +68,38 @@
     "buttonRow": 12
   },
   "contrastMin": 4.5,
+  "motion": {
+    "_note": "动效令牌唯一事实源。full=完整体验；light=自动轻量降级（系统减动效 / 省流量或 2G-慢网 / 核心数≤2 / 内存≤2GB），不是关掉效果，而是时长更短、位移更小、视差关掉。对应 CSS 变量 --m-*，由 html[data-motion=light] 覆盖；JS 只写整数序号（如 --rise-i），所有数值由 CSS 算出，避免 JS 里出现第二套数字。?motion=full|light 可强制覆盖。",
+    "ease": {
+      "soft": "cubic-bezier(0.22, 0.61, 0.36, 1)",
+      "snap": "cubic-bezier(0.2, 0.7, 0.2, 1)"
+    },
+    "roles": "悬停色/光 = dur1；边框、跨页淡化、导航压缩 = dur2；滚动浮现、到达后块上浮 = dur3；dist1/2/3 = 小/中/大位移；stagger = 逐项错峰步长；parallax = 景深视差强度（0 关掉）；spot = 光斑强度系数",
+    "tiers": {
+      "full": {
+        "dur1": "0.16s",
+        "dur2": "0.24s",
+        "dur3": "0.5s",
+        "dist1": "6px",
+        "dist2": "16px",
+        "dist3": "28px",
+        "stagger": "0.028s",
+        "parallax": "1",
+        "spot": "1"
+      },
+      "light": {
+        "dur1": "0.1s",
+        "dur2": "0.14s",
+        "dur3": "0.3s",
+        "dist1": "3px",
+        "dist2": "8px",
+        "dist3": "14px",
+        "stagger": "0.016s",
+        "parallax": "0",
+        "spot": "0.7"
+      }
+    }
+  },
   "sourceContract": {
     ".btn": {
       "height": "44px",

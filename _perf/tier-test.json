@@ -1,0 +1,219 @@
+{
+  "full": {
+    "tier": "full",
+    "dur2": "0.24s",
+    "dur3": "0.5s",
+    "mDur1": "0.16s",
+    "dist2": "16px",
+    "stagger": "0.028s",
+    "parallax": "1",
+    "dur1Alias": "0.16s",
+    "apiTier": "full",
+    "apiDur2": 240,
+    "apiDur3": 500,
+    "apiDist2": 16,
+    "apiStagger": 0.028,
+    "apiParallax": 1,
+    "riseKeyframes": "translateY(var(--m-dist-2))",
+    "riseIndex": "",
+    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+  },
+  "light": {
+    "tier": "light",
+    "dur2": "0.14s",
+    "dur3": "0.3s",
+    "mDur1": "0.1s",
+    "dist2": "8px",
+    "stagger": "0.016s",
+    "parallax": "0",
+    "dur1Alias": "0.1s",
+    "apiTier": "light",
+    "apiDur2": 140,
+    "apiDur3": 300,
+    "apiDist2": 8,
+    "apiStagger": 0.016,
+    "apiParallax": 0,
+    "riseKeyframes": "translateY(var(--m-dist-2))",
+    "riseIndex": "",
+    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+  },
+  "forced": {
+    "tier": "full",
+    "dur2": "0.24s",
+    "dur3": "0.5s",
+    "mDur1": "0.16s",
+    "dist2": "16px",
+    "stagger": "0.028s",
+    "parallax": "1",
+    "dur1Alias": "0.16s",
+    "apiTier": "full",
+    "apiDur2": 240,
+    "apiDur3": 500,
+    "apiDist2": 16,
+    "apiStagger": 0.028,
+    "apiParallax": 1,
+    "riseKeyframes": "translateY(var(--m-dist-2))",
+    "riseIndex": "",
+    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+  },
+  "explicitLight": {
+    "tier": "light",
+    "dur2": "0.14s",
+    "dur3": "0.3s",
+    "mDur1": "0.1s",
+    "dist2": "8px",
+    "stagger": "0.016s",
+    "parallax": "0",
+    "dur1Alias": "0.1s",
+    "apiTier": "light",
+    "apiDur2": 140,
+    "apiDur3": 300,
+    "apiDist2": 8,
+    "apiStagger": 0.016,
+    "apiParallax": 0,
+    "riseKeyframes": "translateY(var(--m-dist-2))",
+    "riseIndex": "",
+    "arrivalRule": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behavior: ; transition-delay: calc(var(--rise-i, 0) * var(--m-stagger)); } | "
+  },
+  "results": [
+    {
+      "name": "自适应：无参数时按设备能力判档（full/light 之一）",
+      "pass": true,
+      "detail": "light"
+    },
+    {
+      "name": "完整档：档位 = full",
+      "pass": true,
+      "detail": "full"
+    },
+    {
+      "name": "完整档：--m-dur-2 = 0.24s",
+      "pass": true,
+      "detail": "0.24s"
+    },
+    {
+      "name": "完整档：--m-dist-2 = 16px",
+      "pass": true,
+      "detail": "16px"
+    },
+    {
+      "name": "完整档：--m-stagger = 0.028s",
+      "pass": true,
+      "detail": "0.028s"
+    },
+    {
+      "name": "完整档：--m-parallax = 1",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "完整档：--dur-1 别名与 --m-dur-1 同值",
+      "pass": true,
+      "detail": {
+        "alias": "0.16s",
+        "m": "0.16s"
+      }
+    },
+    {
+      "name": "LSMotion 暴露档位",
+      "pass": true,
+      "detail": "full"
+    },
+    {
+      "name": "LSMotion.dur(2) = 240ms",
+      "pass": true,
+      "detail": 240
+    },
+    {
+      "name": "LSMotion.dur(3) = 500ms",
+      "pass": true,
+      "detail": 500
+    },
+    {
+      "name": "LSMotion.dist(2) = 16",
+      "pass": true,
+      "detail": 16
+    },
+    {
+      "name": "LSMotion.stagger() = 0.028",
+      "pass": true,
+      "detail": 0.028
+    },
+    {
+      "name": "LSMotion.parallax() = 1",
+      "pass": true,
+      "detail": 1
+    },
+    {
+      "name": "浮现位移走令牌 var(--m-dist-2)",
+      "pass": true,
+      "detail": "translateY(var(--m-dist-2))"
+    },
+    {
+      "name": "到达上浮用 calc(序号 * var(--m-stagger))",
+      "pass": true,
+      "detail": "html.js.vt-arrive.vt-settle .reveal.is-in.no-rise { translate: 0px; transition-property: ; transition-duration: ; transition-timing-function: ; transition-behav"
+    },
+    {
+      "name": "减动效：档位 = light",
+      "pass": true,
+      "detail": "light"
+    },
+    {
+      "name": "减动效：--m-dur-2 = 0.14s",
+      "pass": true,
+      "detail": "0.14s"
+    },
+    {
+      "name": "减动效：--m-dist-2 = 8px",
+      "pass": true,
+      "detail": "8px"
+    },
+    {
+      "name": "减动效：--m-stagger = 0.016s",
+      "pass": true,
+      "detail": "0.016s"
+    },
+    {
+      "name": "减动效：视差关闭（--m-parallax = 0）",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "减动效：LSMotion.dur(2) = 140ms",
+      "pass": true,
+      "detail": 140
+    },
+    {
+      "name": "减动效：LSMotion.parallax() = 0",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "?motion=full 覆盖减动效 → full",
+      "pass": true,
+      "detail": "full"
+    },
+    {
+      "name": "?motion=full 时令牌回到完整档",
+      "pass": true,
+      "detail": {
+        "dur2": "0.24s",
+        "parallax": "1"
+      }
+    },
+    {
+      "name": "?motion=light 强制轻量档",
+      "pass": true,
+      "detail": "light"
+    },
+    {
+      "name": "轻量档令牌生效",
+      "pass": true,
+      "detail": {
+        "dur": 140,
+        "dist": 8
+      }
+    }
+  ]
+}

@@ -27,6 +27,58 @@
     return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }
 
+  /* ---------- 动效分级 + 统一调度 ----------
+     档位（full / light）由 head 里的内联脚本在首绘前写好 data-motion，数值全部住在
+     --m-* 令牌里：这里只把令牌读给 WAAPI/JS 动画用，并把所有按帧任务合批成一条 rAF
+     （页面隐藏时不跑，回到前台再补一帧，避免后台标签页空转）。
+     JS 里不出现第二套时长/位移数字——要改数值改 design.tokens.json。 */
+  var Motion = (function () {
+    var cache = {};
+    function raw(name) {
+      if (cache[name] === undefined) {
+        var v = '';
+        try { v = getComputedStyle(root).getPropertyValue('--m-' + name).trim(); } catch (e) {}
+        cache[name] = v;
+      }
+      return cache[name];
+    }
+    function num(name) {
+      var v = parseFloat(raw(name));
+      return isFinite(v) ? v : 0;
+    }
+    var tasks = [];
+    var frameId = 0;
+    function flush() {
+      frameId = 0;
+      if (document.hidden) return;              /* 隐藏时任务留在队列，回前台再排空 */
+      var list = tasks;
+      tasks = [];
+      for (var i = 0; i < list.length; i++) list[i].fn();
+    }
+    function pump() {
+      if (!frameId) frameId = window.requestAnimationFrame(flush);
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && tasks.length) pump();
+    });
+    return {
+      /* 同一个 key 一帧内只登记一次：多个 scroll/pointer 回调合批 */
+      frame: function (key, fn) {
+        for (var i = 0; i < tasks.length; i++) { if (tasks[i].key === key) return; }
+        tasks.push({ key: key, fn: fn });
+        pump();
+      },
+      tier: function () { return root.getAttribute('data-motion') === 'light' ? 'light' : 'full'; },
+      isFull: function () { return root.getAttribute('data-motion') !== 'light'; },
+      dur: function (slot) { return Math.round(num('dur-' + slot) * 1000); },     /* ms，给 WAAPI */
+      dist: function (slot) { return num('dist-' + slot); },                       /* px */
+      stagger: function () { return num('stagger'); },                            /* s，逐项错峰步长 */
+      parallax: function () { return num('parallax'); },                          /* 0 = 关掉景深 */
+      spot: function () { return num('spot'); }                                  /* 光斑强度系数 */
+    };
+  })();
+  window.LSMotion = Motion;
+
   /* 主题切换：从主题按钮位置做整页圆形揭示（View Transition）。
      旧页面先冻结成快照，换主题后用 520ms 的 clip-path 圆揭开新页面；
      换肤期间 <html> 带 .vt-theme，悬停熄灯逻辑会跳过（浮层会伪造 pointerleave）。
@@ -253,10 +305,8 @@
   var bar = document.querySelector('[data-progress]');
   var navWrap = document.querySelector('.nav-wrap');
   var toTop = document.querySelector('[data-to-top]');
-  var ticking = false;
 
   function onScrollNow() {
-    ticking = false;
     var doc = document.documentElement;
     var sy = window.pageYOffset || doc.scrollTop || 0;
     if (bar) {
@@ -270,7 +320,7 @@
   }
 
   function onScroll() {
-    if (!ticking) { ticking = true; window.requestAnimationFrame(onScrollNow); }
+    Motion.frame('scroll', onScrollNow);
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll);
@@ -283,9 +333,7 @@
     var tocItems = tocLinks.map(function (a) {
       return { a: a, el: document.getElementById(a.getAttribute('href').slice(1)) };
     }).filter(function (it) { return it.el; });
-    var tocTick = false;
     var syncToc = function () {
-      tocTick = false;
       var y = pageTop() + 120;
       var active = null;
       for (var i = 0; i < tocItems.length; i++) {
@@ -297,7 +345,7 @@
       }
     };
     var tocOnScroll = function () {
-      if (!tocTick) { tocTick = true; window.requestAnimationFrame(syncToc); }
+      Motion.frame('toc', syncToc);
     };
     window.addEventListener('scroll', tocOnScroll, { passive: true });
     window.addEventListener('resize', tocOnScroll);
@@ -318,7 +366,7 @@
     root.classList.add('vt-active', 'vt-arrive');
     var blocks = document.querySelectorAll('.reveal.is-in.no-rise');
     for (var b = 0; b < blocks.length; b++) {
-      blocks[b].style.setProperty('--rise-d', (b * 0.028).toFixed(3) + 's');
+      blocks[b].style.setProperty('--rise-i', String(b));
     }
     var settle = function () { root.classList.add('vt-settle'); };
     if (e.viewTransition.finished && e.viewTransition.finished.then) {
@@ -589,7 +637,6 @@
     var railTop = [];
     var railLast = null;
     var railP = '';
-    var railTick = false;
     /* 章节位置按文档坐标缓存：滚动时只做数值比较，不再逐项读布局；进度线也在这里更新 */
     var railMeasure = function () {
       if (!railItems.length) return;
@@ -626,11 +673,7 @@
         rail.style.setProperty('--rail-p', pv);
       }
     };
-    var railOnScroll = function () {
-      if (railTick) return;
-      railTick = true;
-      window.requestAnimationFrame(function () { railTick = false; railUpdate(); });
-    };
+    var railOnScroll = function () { Motion.frame('rail', railUpdate); };
     var railRefresh = function () { railMeasure(); railUpdate(); };
     railRefresh();
     window.addEventListener('scroll', railOnScroll, { passive: true });

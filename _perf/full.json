@@ -1,0 +1,60 @@
+{
+  "base": "http://127.0.0.1:8090",
+  "at": "2026-10-22T08:57:16.728Z",
+  "budget": {
+    "P95_MAX": 20,
+    "JANK_MAX": 6,
+    "LONG_MAX": 3
+  },
+  "scenarios": [
+    {
+      "label": "首页载入（首屏编排）",
+      "tier": "light",
+      "path": "/",
+      "frames": 2,
+      "p50": 666.7,
+      "p95": 666.7,
+      "max": 666.7,
+      "jankPct": 100,
+      "longTasks": 2,
+      "worstLongTask": 153
+    },
+    {
+      "label": "连续滚动（浮现+进度+章节）",
+      "tier": "light",
+      "path": "/",
+      "frames": 81,
+      "p50": 300,
+      "p95": 650.1,
+      "max": 800,
+      "jankPct": 100,
+      "longTasks": 34,
+      "worstLongTask": 197
+    },
+    {
+      "label": "玻璃光斑跟随（GX 悬停）",
+      "tier": "light",
+      "path": "/",
+      "frames": 23,
+      "p50": 333.2,
+      "p95": 649.9,
+      "max": 683.3,
+      "jankPct": 100,
+      "longTasks": 21,
+      "worstLongTask": 198
+    },
+    {
+      "label": "跨页导航（过渡 + 到达上浮）",
+      "tier": "light",
+      "path": "/projects/",
+      "frames": 2,
+      "p50": 799.9,
+      "p95": 799.9,
+      "max": 799.9,
+      "jankPct": 100,
+      "longTasks": 4,
+      "worstLongTask": 268
+    }
+  ],
+  "errors": []
+}

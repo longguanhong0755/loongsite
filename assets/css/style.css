@@ -31,12 +31,22 @@
   --tok-s: #3f3f46;
   --tok-n: #55555e;
   --grid: rgba(19, 19, 21, 0.035);
-  /* 动效与质感令牌（新增；不涉及配色） */
+  /* 动效与质感令牌（数值唯一来源 design.tokens.json → motion.tiers.full）
+     --m-* 是分级令牌，--dur-* 是全站沿用的别名；轻量档在下方 html[data-motion=light] 覆盖 */
   --ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-snap: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --dur-1: 0.16s;
-  --dur-2: 0.24s;
-  --dur-3: 0.5s;
+  --m-dur-1: 0.16s;
+  --m-dur-2: 0.24s;
+  --m-dur-3: 0.5s;
+  --m-dist-1: 6px;
+  --m-dist-2: 16px;
+  --m-dist-3: 28px;
+  --m-stagger: 0.028s;
+  --m-parallax: 1;
+  --m-spot: 1;
+  --dur-1: var(--m-dur-1);
+  --dur-2: var(--m-dur-2);
+  --dur-3: var(--m-dur-3);
   --grain: 0.055;
   --glow: rgba(19, 19, 21, 0.05);
   /* 玻璃悬停层（GX v3）：只有纯白叠加层（只加白、不压暗）；一束全局光 + 玻璃显影
@@ -56,6 +66,21 @@
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --wrap: 1080px;
+}
+
+/* 轻量档（自动降级：系统减动效 / 低配或省流量设备 / 触屏；也可 ?motion=light 强制）。
+   不是关掉效果——本站点名的效果照样在，只是时长更短、位移更小、视差关掉。
+   数值来源 design.tokens.json → motion.tiers.light */
+html[data-motion="light"] {
+  --m-dur-1: 0.1s;
+  --m-dur-2: 0.14s;
+  --m-dur-3: 0.3s;
+  --m-dist-1: 3px;
+  --m-dist-2: 8px;
+  --m-dist-3: 14px;
+  --m-stagger: 0.016s;
+  --m-parallax: 0;
+  --m-spot: 0.7;
 }
 
 html[data-theme="dark"] {
@@ -1688,26 +1713,27 @@ html.js .reveal { opacity: 0; }
    --d 控制逐项错峰；从上方进入视口（往回翻/锚点直达）时 JS 加 .no-rise → 直接显示 */
 html.js .reveal.is-in {
   opacity: 1;
-  animation: rise var(--dur-3) var(--ease-soft) backwards;
+  animation: rise var(--m-dur-3) var(--ease-soft) backwards;
   animation-delay: var(--d, 0s);
 }
 html.js .reveal.is-in.no-rise { animation: none; }
-@keyframes rise { from { opacity: 0; transform: translateY(16px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(var(--m-dist-2)); } }
 
 /* 跨页到达：整页从上方落位时，首屏块先在略低处（快照里保持可见，不会空白），
-   落位结束后再浮上来。用独立的 translate 属性，避免覆盖卡片自身的倾斜 transform。 */
-html.js.vt-arrive .reveal.is-in.no-rise { translate: 0 16px; }
+   落位结束后再浮上来。用独立的 translate 属性，避免覆盖卡片自身的倾斜 transform。
+   JS 只给块写序号 --rise-i，错峰时长由令牌算出（轻量档自动变短） */
+html.js.vt-arrive .reveal.is-in.no-rise { translate: 0 var(--m-dist-2); }
 html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
   translate: 0 0;
-  transition: translate 0.42s var(--ease-soft);
-  transition-delay: var(--rise-d, 0s);
+  transition: translate var(--m-dur-3) var(--ease-soft);
+  transition-delay: calc(var(--rise-i, 0) * var(--m-stagger));
 }
 
-.grid > .reveal:nth-child(2), .skill-groups > .reveal:nth-child(2), .post-list > .reveal:nth-child(2) { --d: 0.06s; }
-.grid > .reveal:nth-child(3), .skill-groups > .reveal:nth-child(3), .post-list > .reveal:nth-child(3) { --d: 0.12s; }
-.grid > .reveal:nth-child(4), .skill-groups > .reveal:nth-child(4), .post-list > .reveal:nth-child(4) { --d: 0.18s; }
-.grid > .reveal:nth-child(5), .post-list > .reveal:nth-child(5) { --d: 0.24s; }
-.grid > .reveal:nth-child(6), .post-list > .reveal:nth-child(6) { --d: 0.3s; }
+.grid > .reveal:nth-child(2), .skill-groups > .reveal:nth-child(2), .post-list > .reveal:nth-child(2) { --d: calc(var(--m-stagger) * 2); }
+.grid > .reveal:nth-child(3), .skill-groups > .reveal:nth-child(3), .post-list > .reveal:nth-child(3) { --d: calc(var(--m-stagger) * 4); }
+.grid > .reveal:nth-child(4), .skill-groups > .reveal:nth-child(4), .post-list > .reveal:nth-child(4) { --d: calc(var(--m-stagger) * 6); }
+.grid > .reveal:nth-child(5), .post-list > .reveal:nth-child(5) { --d: calc(var(--m-stagger) * 8); }
+.grid > .reveal:nth-child(6), .post-list > .reveal:nth-child(6) { --d: calc(var(--m-stagger) * 10); }
 
 /* ---------- 框架层：进度条 / 回顶 / 轻提示 / 导航滚动态 ---------- */
 .progress {

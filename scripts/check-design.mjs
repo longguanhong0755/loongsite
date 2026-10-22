@@ -60,6 +60,9 @@ function buildDocBlock() {
     ['控件高度', `lg ${t.controlHeights.lg} · md ${t.controlHeights.md} · sm ${t.controlHeights.sm} · fab ${t.controlHeights.fab} · 导航条 ${t.controlHeights.nav}`],
     ['页级节奏', `页头→首块 ${t.pageRhythm.headToFirstBlock} · 工具条→内容 ${t.pageRhythm.toolbarToGrid} · 内容→动作行 ${t.pageRhythm.contentToActions} · 标签→行 ${t.pageRhythm.labelToRow}`],
     ['行间距', `按钮行 ${t.rowGaps.buttonRow} · 工具条 / 徽章行 / chip 对 ${t.rowGaps.toolbar}`],
+    ['动效时长', `full ${t.motion.tiers.full.dur1} / ${t.motion.tiers.full.dur2} / ${t.motion.tiers.full.dur3} · 轻量 ${t.motion.tiers.light.dur1} / ${t.motion.tiers.light.dur2} / ${t.motion.tiers.light.dur3}（悬停 / 边框与跨页 / 浮现）`],
+    ['动效位移', `full ${t.motion.tiers.full.dist1} / ${t.motion.tiers.full.dist2} / ${t.motion.tiers.full.dist3} · 轻量 ${t.motion.tiers.light.dist1} / ${t.motion.tiers.light.dist2} / ${t.motion.tiers.light.dist3}；错峰 ${t.motion.tiers.full.stagger} / ${t.motion.tiers.light.stagger}`],
+    ['动效曲线', `${t.motion.ease.soft}（soft）· ${t.motion.ease.snap}（snap）`],
     ['正文对比度', `≥ ${t.contrastMin}:1`]
   ];
   if (t.renderedContract.footerSticky) {
