@@ -324,6 +324,7 @@ main > .page-head ~ .section:first-of-type { margin-top: 48px; }
 }
 
 .nav {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -362,6 +363,8 @@ main > .page-head ~ .section:first-of-type { margin-top: 48px; }
 }
 
 .nav-link {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -370,7 +373,10 @@ main > .page-head ~ .section:first-of-type { margin-top: 48px; }
   border-radius: 999px;
   color: var(--text-2);
   font-size: 14px;
-  transition: background var(--dur-1) var(--ease-soft), color var(--dur-1) var(--ease-soft);
+  transition: background var(--dur-1) var(--ease-soft), color var(--dur-1) var(--ease-soft), box-shadow var(--dur-1) var(--ease-soft);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .nav-link:hover { background: var(--panel-inset); color: var(--text); }
@@ -380,6 +386,30 @@ main > .page-head ~ .section:first-of-type { margin-top: 48px; }
   background: var(--panel-inset);
   box-shadow: inset 0 0 0 1px var(--line-soft);
   font-weight: 600;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+/* 拖拽换页：玻璃底板在文字背后滑动，经过的栏目只提亮文字，不遮标签 */
+.nav-link.is-drop { color: var(--text); }
+html.nav-dragging .nav-link.is-active,
+html.nav-dragging .nav-link.is-active:hover,
+html.nav-dragging .nav-link:hover { background: transparent; box-shadow: none; }
+html.nav-dragging .nav-link.is-active { color: var(--text-2); }
+html.nav-dragging, html.nav-dragging body, html.nav-dragging .nav-link { cursor: grabbing; }
+html.nav-dragging body { -webkit-user-select: none; user-select: none; }
+
+.nav-drag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-strong);
+  box-shadow: var(--rim), var(--shadow-md);
+  will-change: transform;
 }
 
 .nav-actions {
@@ -1694,15 +1724,6 @@ html.js .reveal.is-in {
 html.js .reveal.is-in.no-rise { animation: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
 
-/* 跨页到达：整页从上方落位时，首屏块先在略低处（快照里保持可见，不会空白），
-   落位结束后再浮上来。用独立的 translate 属性，避免覆盖卡片自身的倾斜 transform。 */
-html.js.vt-arrive .reveal.is-in.no-rise { translate: 0 16px; }
-html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
-  translate: 0 0;
-  transition: translate 0.42s var(--ease-soft);
-  transition-delay: var(--rise-d, 0s);
-}
-
 .grid > .reveal:nth-child(2), .skill-groups > .reveal:nth-child(2), .post-list > .reveal:nth-child(2) { --d: 0.06s; }
 .grid > .reveal:nth-child(3), .skill-groups > .reveal:nth-child(3), .post-list > .reveal:nth-child(3) { --d: 0.12s; }
 .grid > .reveal:nth-child(4), .skill-groups > .reveal:nth-child(4), .post-list > .reveal:nth-child(4) { --d: 0.18s; }
@@ -1797,7 +1818,7 @@ html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
 .site-name { text-wrap: balance; }
 .section-title { letter-spacing: -0.02em; }
 
-/* ---------- 跨页过渡（Chromium 渐进增强）：新页从上方落位 ---------- */
+/* ---------- 跨页过渡（Chromium 渐进增强）：新页从下方滑入落位 ---------- */
 @view-transition { navigation: auto; }
 
 .nav { view-transition-name: site-nav; }
@@ -1811,16 +1832,16 @@ html.js.vt-arrive.vt-settle .reveal.is-in.no-rise {
 ::view-transition-new(*) { animation: vt-new var(--dur-2) var(--ease-soft) both; }
 @keyframes vt-new { from { opacity: 0; } }
 
-/* 只给 root 加下滑：共享标题与固定导航有自己的组动画，不能跟着整页位移。
-   20px 的落差 + 淡入，落位后首屏块再由 JS 触发的 translate 过渡浮上来 */
-::view-transition-new(root) { animation: vt-page 0.34s var(--ease-soft) both; }
-@keyframes vt-page { from { opacity: 0; transform: translateY(-20px); } }
+/* 只给 root 加滑入：共享标题与固定导航各有自己的组动画，不能跟着整页位移。
+   12px 的位移 + 淡入，落位时不会露出旧页边缘，也不会有整页缩放的文字发虚 */
+::view-transition-new(root) { animation: vt-page 0.32s var(--ease-soft) both; }
+@keyframes vt-page { from { opacity: 0; transform: translateY(12px); } }
 
-/* 导航栏不参与淡化。与上面同特异度，必须写在后面才压得住 */
+/* 导航栏不参与淡化，直接换成新页快照。旧快照必须藏起来：
+   导航玻璃是半透明的，旧的活动底板会透过新快照，出现两个选中块叠影 */
 ::view-transition-group(site-nav),
 ::view-transition-old(site-nav),
 ::view-transition-new(site-nav) { animation: none; }
-/* 导航玻璃半透明，旧快照会把旧的活动底板透出来；直接隐藏旧快照 */
 ::view-transition-old(site-nav) { opacity: 0; }
 
 /* 主题切换：圆形揭示由 WAAPI 驱动。换肤时关掉新页默认淡入，并让导航/飞行标题

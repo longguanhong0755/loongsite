@@ -119,6 +119,123 @@
     else if (mq.addListener) mq.addListener(onChange);
   }
 
+  /* ---------- 导航活动玻璃块：拖到其它栏目，松手才切换 ---------- */
+  (function () {
+    var navLinks = document.querySelectorAll('.nav-links .nav-link');
+    var active = document.querySelector('.nav-links .nav-link.is-active');
+    var nav = active && active.closest ? active.closest('.nav') : null;
+    var row = active && active.closest ? active.closest('.nav-links') : null;
+    if (!active || !nav || !row || navLinks.length < 2) return;
+    active.setAttribute('title', '按住玻璃块拖到其它栏目，松开即切换');
+    for (var i = 0; i < navLinks.length; i++) navLinks[i].setAttribute('draggable', 'false');
+
+    var down = false, dragging = false, suppress = false, programmatic = false;
+    var pid = 0, sx0 = 0, sy0 = 0, gx0 = 0, px = 0;
+    var baseX = 0, minX = 0, maxX = 0;
+    var ghost = null, drop = null, raf = 0;
+    var THRESH = 6;
+
+    function findLink(x, y) {
+      var hit = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
+      var link = hit && hit.closest ? hit.closest('.nav-link') : null;
+      return link && link !== active && link.closest('.nav-links') ? link : null;
+    }
+    function clearDrop() {
+      if (drop) drop.classList.remove('is-drop');
+      drop = null;
+    }
+    function finish() {
+      if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      ghost = null;
+      clearDrop();
+      root.classList.remove('nav-dragging');
+      if (raf) { window.cancelAnimationFrame(raf); raf = 0; }
+      if (pid) { try { active.releasePointerCapture(pid); } catch (e) {} pid = 0; }
+      down = false;
+      dragging = false;
+    }
+    function paint() {
+      raf = 0;
+      if (!ghost) return;
+      var x = Math.max(minX, Math.min(maxX, px - gx0));
+      ghost.style.transform = 'translate3d(' + (x - baseX) + 'px,0,0) scale(1.02)';
+    }
+    function onDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (down) return;
+      down = true;
+      dragging = false;
+      sx0 = px = e.clientX;
+      sy0 = e.clientY;
+    }
+    function onMove(e) {
+      if (!down) return;
+      if (!dragging) {
+        var dx = e.clientX - sx0, dy = e.clientY - sy0;
+        if (dx * dx + dy * dy < THRESH * THRESH) return;
+        dragging = true;
+        suppress = true;
+        var r0 = active.getBoundingClientRect();
+        var nr = nav.getBoundingClientRect();
+        var rr = row.getBoundingClientRect();
+        gx0 = sx0 - r0.left;
+        baseX = r0.left - nr.left;
+        minX = rr.left - nr.left;
+        maxX = rr.right - nr.left - r0.width;
+        ghost = document.createElement('i');
+        ghost.className = 'nav-drag';
+        ghost.setAttribute('aria-hidden', 'true');
+        ghost.style.left = baseX + 'px';
+        ghost.style.top = (r0.top - nr.top) + 'px';
+        ghost.style.width = r0.width + 'px';
+        ghost.style.height = r0.height + 'px';
+        nav.appendChild(ghost);
+        root.classList.add('nav-dragging');
+        try { active.setPointerCapture(e.pointerId); pid = e.pointerId; } catch (err) {}
+      }
+      px = e.clientX;
+      if (!raf) raf = window.requestAnimationFrame(paint);
+      var link = findLink(e.clientX, e.clientY);
+      if (link !== drop) {
+        clearDrop();
+        drop = link;
+        if (drop) drop.classList.add('is-drop');
+      }
+    }
+    function onUp(e) {
+      if (!down) return;
+      if (!dragging) { down = false; return; }
+      var to = findLink(e.clientX, e.clientY);
+      finish();
+      if (to) {
+        programmatic = true;
+        to.click();
+        window.setTimeout(function () { programmatic = false; suppress = false; }, 500);
+      } else {
+        window.setTimeout(function () { suppress = false; }, 0);
+      }
+    }
+    function onCancel() {
+      if (!down) return;
+      var wasDrag = dragging;
+      finish();
+      if (wasDrag) window.setTimeout(function () { suppress = false; }, 0);
+    }
+    active.addEventListener('pointerdown', onDown);
+    document.addEventListener('pointermove', onMove, { passive: true });
+    document.addEventListener('pointerup', onUp, { passive: true });
+    document.addEventListener('pointercancel', onCancel, { passive: true });
+    document.addEventListener('click', function (e) {
+      if (programmatic) { programmatic = false; return; }
+      if (suppress) {
+        e.preventDefault();
+        e.stopPropagation();
+        suppress = false;
+      }
+    }, true);
+    window.addEventListener('blur', onCancel);
+  })();
+
   /* 元素在视口里的可见比例；rootBottom 用来复现 IntersectionObserver 的 rootMargin */
   function visibleRatio(el, rootBottom) {
     var r = el.getBoundingClientRect();
@@ -311,21 +428,9 @@
     });
   }
 
-  /* 跨页过渡激活时打标记：入场编排据此跳过，避免与过渡动画打架。
-     到达时整页从上方落位，落位结束后再让首屏块错峰浮上来。 */
+  /* 跨页过渡激活时打标记：入场编排据此跳过，避免与过渡动画打架 */
   window.addEventListener('pagereveal', function (e) {
-    if (!e || !e.viewTransition) return;
-    root.classList.add('vt-active', 'vt-arrive');
-    var blocks = document.querySelectorAll('.reveal.is-in.no-rise');
-    for (var b = 0; b < blocks.length; b++) {
-      blocks[b].style.setProperty('--rise-d', (b * 0.028).toFixed(3) + 's');
-    }
-    var settle = function () { root.classList.add('vt-settle'); };
-    if (e.viewTransition.finished && e.viewTransition.finished.then) {
-      e.viewTransition.finished.then(settle, settle);
-    } else {
-      window.setTimeout(settle, 500);
-    }
+    if (e && e.viewTransition) root.classList.add('vt-active');
   });
 
   /* ---------- 数字滚动（首屏统计 / 项目指标） ---------- */
