@@ -13,6 +13,7 @@
     "perf:light": "TIER=light node --experimental-websocket tests/motion/perf.mjs",
     "test:tier": "node --experimental-websocket tests/motion/tier-test.mjs",
     "test:route": "node --experimental-websocket tests/motion/route-test.mjs",
+    "test:depth": "node --experimental-websocket tests/motion/depth-test.mjs",
     "design:sync": "node scripts/check-design.mjs --write",
     "audit": "python scripts/audit-design.py",
     "baseline": "python scripts/audit-design.py --baseline",

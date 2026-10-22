@@ -508,6 +508,49 @@
   window.addEventListener('resize', onScroll);
   onScrollNow();
 
+  /* ---------- 首屏标题分层：把名字拆成字符，逐个从倾斜的平面里立起来 ----------
+     无障碍：h1 留 aria-label，字符块 aria-hidden（读屏仍读整个名字）。
+     JS 只写字符序号 --ch-i，错峰与位移全部由 CSS 令牌算出来。 */
+  (function () {
+    var h = document.querySelector('.hero .hero-name');
+    if (!h) return;
+    var text = (h.textContent || '').trim();
+    if (!text) return;
+    var chars = Array.from ? Array.from(text) : text.split('');
+    if (chars.length < 2 || chars.length > 24) return;
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < chars.length; i++) {
+      var s = document.createElement('span');
+      s.className = 'ch';
+      s.setAttribute('aria-hidden', 'true');
+      s.style.setProperty('--ch-i', String(i));
+      s.textContent = chars[i] === ' ' ? '\u00a0' : chars[i];
+      frag.appendChild(s);
+    }
+    h.setAttribute('aria-label', text);
+    h.textContent = '';
+    h.appendChild(frag);
+    h.setAttribute('data-split', '');
+  })();
+
+  /* ---------- 景深视差（仅首页 / 项目详情） ----------
+     --px = 该区块滚出视口的进度 0~1，各层行程由 CSS 按 --px-f 算（JS 不碰像素值）。 */
+  (function () {
+    var scope = document.querySelector('[data-parallax]');
+    if (!scope || !Motion.isFull()) return;
+    var update = function () {
+      var r = scope.getBoundingClientRect();
+      var h = r.height || 1;
+      var p = -r.top / h;
+      if (p < 0) p = 0; else if (p > 1) p = 1;
+      scope.style.setProperty('--px', p.toFixed(4));
+    };
+    var onScrollPx = function () { Motion.frame('px', update); };
+    window.addEventListener('scroll', onScrollPx, { passive: true });
+    window.addEventListener('resize', onScrollPx);
+    update();
+  })();
+
   /* ---------- 文章目录：随滚动高亮当前小节 ---------- */
   var tocLinks = [].slice.call(document.querySelectorAll('[data-toc] a[href^="#"]'));
   if (tocLinks.length) {

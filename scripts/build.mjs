@@ -357,8 +357,8 @@ function renderHome() {
   const exp = renderExperience();
 
   const content = `
-    <section class="hero container">
-      <div class="hero-card glass">
+    <section class="hero container" data-parallax>
+      <div class="hero-card glass" data-px>
         <div class="hero-main">
           <div class="hero-eyebrow">${icon('sparkles', 14)}<span>HELLO</span></div>
           <h1 class="hero-name">${esc(profile.name)}</h1>
@@ -371,7 +371,7 @@ function renderHome() {
         <div class="hero-disc"><div class="hero-avatar"><img src="${esc(profile.avatar)}" srcset="${esc(profile.avatarSmall)} 256w, ${esc(profile.avatar)} 512w" sizes="(max-width: 760px) 118px, 188px" alt="${esc(profile.name)}" width="512" height="512" fetchpriority="high" decoding="async"></div></div>
         ${statsStrip}
       </div>
-      <a class="scroll-cue" href="#about" aria-label="向下浏览">向下探索${icon('arrowUp', 14)}</a>
+      <a class="scroll-cue" href="#about" aria-label="向下浏览" data-px>向下探索${icon('arrowUp', 14)}</a>
     </section>
 
     <nav class="rail" aria-label="页面章节" data-rail-nav>
@@ -608,7 +608,7 @@ function renderProjectPage(p) {
   const nextP = projects[(idx + 1) % projects.length];
 
   const content = `
-    <div class="page-head container" id="top" data-morph="proj-${esc(p.slug)}">
+    <div class="page-head container" id="top" data-morph="proj-${esc(p.slug)}" data-parallax data-px>
       <a class="backlink" href="/projects/">${icon('arrowLeft', 15)}返回项目列表</a>
       <div class="meta-row">
         ${isPublic ? badge('公开项目', 'public') : badge('私有项目', 'private')}

@@ -75,6 +75,25 @@
       "snap": "cubic-bezier(0.2, 0.7, 0.2, 1)"
     },
     "roles": "悬停色/光 = dur1；边框、跨页淡化、导航压缩 = dur2；滚动浮现、到达后块上浮 = dur3；dist1/2/3 = 小/中/大位移；stagger = 逐项错峰步长；parallax = 景深视差强度（0 关掉）；spot = 光斑强度系数",
+    "hero": {
+      "_note": "首屏分层入场：层间错峰 = --m-stagger × layerRatio，字符间错峰 = --m-stagger × charRatio。写成比率而不是绝对值——轻量档的 stagger 变短，错峰自动等比缩小，不必再维护第二套数字。",
+      "layerRatio": "2.5",
+      "charRatio": "1.25"
+    },
+    "parallax": {
+      "_note": "景深视差：--px 是 JS 写的 0~1 滚动进度；每层行程 = --px × --px-f（该层像素）× --m-parallax。行程越大 = 离眼睛越近。轻量档 --m-parallax=0 → 整体不动。每层的 --px-f 写在对应 CSS 规则里，由 sourceContract 断言与此处一致。",
+      "travel": {
+        "heroCard": "40",
+        "heroCue": "12",
+        "detailHead": "32"
+      },
+      "travelMobile": {
+        "_note": "窄屏首屏留白少，行程按比例收窄，避免被卡片裁切。",
+        "heroCard": "24",
+        "heroCue": "8",
+        "detailHead": "20"
+      }
+    },
     "tiers": {
       "full": {
         "dur1": "0.16s",
@@ -101,6 +120,22 @@
     }
   },
   "sourceContract": {
+    ":root": {
+      "--hero-layer-ratio": "2.5",
+      "--hero-char-ratio": "1.25"
+    },
+    "[data-px]": {
+      "translate": "0 calc(var(--px, 0) * var(--px-f, 0) * var(--m-parallax) * -1px)"
+    },
+    ".hero-card": {
+      "--px-f": "40"
+    },
+    ".scroll-cue": {
+      "--px-f": "12"
+    },
+    ".page-head": {
+      "--px-f": "32"
+    },
     ".btn": {
       "height": "44px",
       "padding": "0 16px"

@@ -1,0 +1,215 @@
+{
+  "results": [
+    {
+      "name": "标题已拆成字符",
+      "pass": true,
+      "detail": {
+        "n": 5
+      }
+    },
+    {
+      "name": "字符内容拼回原名",
+      "pass": true,
+      "detail": [
+        "l",
+        "o",
+        "o",
+        "n",
+        "g"
+      ]
+    },
+    {
+      "name": "无障碍：h1 留 aria-label",
+      "pass": true,
+      "detail": "loong"
+    },
+    {
+      "name": "无障碍：字符块 aria-hidden",
+      "pass": true,
+      "detail": true
+    },
+    {
+      "name": "字符序号递增且从 0 开始",
+      "pass": true,
+      "detail": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "name": "字符错峰：延迟逐个变大",
+      "pass": true,
+      "detail": [
+        "0.14s",
+        "0.175s",
+        "0.21s",
+        "0.245s",
+        "0.28s"
+      ]
+    },
+    {
+      "name": "字符错峰步长 = --m-stagger × --hero-char-ratio",
+      "pass": true,
+      "detail": {
+        "step": 0.034999999999999976,
+        "expectStep": 0.035
+      }
+    },
+    {
+      "name": "标题动画时长 = --m-dur-3",
+      "pass": true,
+      "detail": {
+        "dur": "0.5s",
+        "dur3": "0.5s"
+      }
+    },
+    {
+      "name": "完整档：字符带 3D 倾斜入场",
+      "pass": true,
+      "detail": "ch-in"
+    },
+    {
+      "name": "拆字符不改排版：宽度与未拆一致",
+      "pass": true,
+      "detail": {
+        "split": 164.9375,
+        "plain": 164.90625,
+        "overflow": -10
+      }
+    },
+    {
+      "name": "拆字符不产生横向溢出",
+      "pass": true,
+      "detail": {
+        "split": 164.9375,
+        "plain": 164.90625,
+        "overflow": -10
+      }
+    },
+    {
+      "name": "层间错峰按令牌算（名字 = 2 层）",
+      "pass": true,
+      "detail": {
+        "name": "0.14s",
+        "expect": 0.14
+      }
+    },
+    {
+      "name": "层间错峰按令牌算（眉标 = 1 层）",
+      "pass": true,
+      "detail": "0.07s"
+    },
+    {
+      "name": "层间错峰按令牌算（头衔 = 3 层）",
+      "pass": true,
+      "detail": "0.21s"
+    },
+    {
+      "name": "层间错峰递增",
+      "pass": true,
+      "detail": {
+        "eyebrow": "0.07s",
+        "name": "0.14s",
+        "title": "0.21s",
+        "tagline": "0.28s",
+        "contacts": "0.35s",
+        "avatar": "0.21s",
+        "stats": "0.49s",
+        "cue": "0.63s"
+      }
+    },
+    {
+      "name": "首页有视差作用域",
+      "pass": true
+    },
+    {
+      "name": "未滚动时视差为 0",
+      "pass": true,
+      "detail": {
+        "px": "0.0000",
+        "card": "0px",
+        "cue": "0px"
+      }
+    },
+    {
+      "name": "滚动后 --px 变成 0~1 的进度",
+      "pass": true,
+      "detail": {
+        "px": 0.4003,
+        "y": 320
+      }
+    },
+    {
+      "name": "卡片行程 = 进度 × --px-f",
+      "pass": true,
+      "detail": {
+        "cardTravel": 16.012,
+        "px": 0.4003,
+        "f": "40"
+      }
+    },
+    {
+      "name": "卡片行程比提示语大（层次分开了）",
+      "pass": true,
+      "detail": 16.012
+    },
+    {
+      "name": "提示语与卡片错速（两层分离）",
+      "pass": true,
+      "detail": {
+        "cardTravel": 16.012,
+        "cueTravel": 4.8036
+      }
+    },
+    {
+      "name": "视差走 translate（不覆盖 transform）",
+      "pass": true,
+      "detail": {
+        "translate": "0px -16.012px",
+        "transform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -0.00105263, 0, 0, 0, 1)"
+      }
+    },
+    {
+      "name": "轻量档：视差整体不动",
+      "pass": true,
+      "detail": {
+        "tier": "light",
+        "px": "",
+        "card": "0px",
+        "name": "ch-in-flat"
+      }
+    },
+    {
+      "name": "轻量档：字符不做 3D 倾斜",
+      "pass": true,
+      "detail": "ch-in-flat"
+    },
+    {
+      "name": "详情页有视差作用域",
+      "pass": true,
+      "detail": {
+        "has": true,
+        "px": "0.0000",
+        "tf": "0px"
+      }
+    },
+    {
+      "name": "详情页滚动后视差生效",
+      "pass": true,
+      "detail": {
+        "px": 0.4296,
+        "travel": 13.7472
+      }
+    },
+    {
+      "name": "博客列表页没有视差作用域",
+      "pass": true,
+      "detail": {
+        "scope": false
+      }
+    }
+  ]
+}

@@ -44,6 +44,10 @@
   --m-stagger: 0.028s;
   --m-parallax: 1;
   --m-spot: 1;
+  /* 首屏分层入场：层间错峰 = --m-stagger × 层比，字符间错峰 = --m-stagger × 字比。
+     写比率而不是绝对值，轻量档 stagger 变短时错峰自动等比缩小。 */
+  --hero-layer-ratio: 2.5;
+  --hero-char-ratio: 1.25;
   --dur-1: var(--m-dur-1);
   --dur-2: var(--m-dur-2);
   --dur-3: var(--m-dur-3);
@@ -467,6 +471,7 @@ html[data-theme="dark"] .theme-ic-sun { opacity: 1; transform: none; }
 
 .hero-card {
   position: relative;
+  --px-f: 40;
   padding: clamp(24px, 4.5vw, 56px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -563,21 +568,66 @@ html[data-theme="dark"] .theme-ic-sun { opacity: 1; transform: none; }
 }
 .hero-card:hover .hero-avatar::before { border-color: var(--line-strong); }
 
-/* ---------- 首屏编排（跨页过渡抵达时不重放） ---------- */
-html.js .hero .hero-main > * { animation: rise 0.65s var(--ease-snap) backwards; }
-html.js .hero .hero-eyebrow { animation-delay: 0.05s; }
-html.js .hero .hero-name { animation-delay: 0.12s; }
-html.js .hero .hero-title { animation-delay: 0.19s; }
-html.js .hero .hero-tagline { animation-delay: 0.26s; }
-html.js .hero .hero-contacts { animation-delay: 0.33s; }
-html.js .hero .hero-avatar { animation: rise 0.8s var(--ease-snap) backwards; animation-delay: 0.22s; }
-html.js .hero .stats-strip { animation: rise 0.7s var(--ease-snap) backwards; animation-delay: 0.42s; }
-html.js .hero .scroll-cue { animation: rise 0.7s var(--ease-snap) backwards; animation-delay: 0.56s; }
+/* ---------- 首屏分层入场（跨页过渡抵达时不重放） ----------
+   层间错峰 = --m-stagger × --hero-layer-ratio，字符间错峰 = --m-stagger × --hero-char-ratio。
+   全是令牌算出来的，这里不出现任何绝对时长。 */
+html.js .hero .hero-main > * {
+  animation: rise var(--m-dur-3) var(--ease-soft) backwards;
+  animation-delay: calc(var(--hi, 0) * var(--m-stagger) * var(--hero-layer-ratio));
+}
+html.js .hero .hero-eyebrow { --hi: 1; }
+html.js .hero .hero-name { --hi: 2; }
+html.js .hero .hero-title { --hi: 3; }
+html.js .hero .hero-tagline { --hi: 4; }
+html.js .hero .hero-contacts { --hi: 5; }
+html.js .hero .hero-avatar {
+  animation: rise var(--m-dur-3) var(--ease-soft) backwards;
+  animation-delay: calc(3 * var(--m-stagger) * var(--hero-layer-ratio));
+}
+html.js .hero .stats-strip {
+  animation: rise var(--m-dur-3) var(--ease-soft) backwards;
+  animation-delay: calc(7 * var(--m-stagger) * var(--hero-layer-ratio));
+}
+html.js .hero .scroll-cue {
+  animation: rise var(--m-dur-3) var(--ease-soft) backwards;
+  animation-delay: calc(9 * var(--m-stagger) * var(--hero-layer-ratio));
+}
 html.vt-active .hero * { animation: none !important; }
+
+/* 标题分层：名字拆成字符，逐个从倾斜的平面里立起来（完整档）；轻量档只做小位移浮起。
+   透视写在每个字符自己的 transform 里（不是父级 perspective）：
+   父级 h1 是一整列宽，透视原点会落在列中间，把字符拉变形。 */
+html.js .hero .hero-name[data-split] { animation: none; }
+html.js .hero .hero-name[data-split] .ch {
+  display: inline-block;
+  animation: ch-in var(--m-dur-3) var(--ease-soft) backwards;
+  animation-delay: calc(
+    var(--hi, 0) * var(--m-stagger) * var(--hero-layer-ratio)
+    + var(--ch-i, 0) * var(--m-stagger) * var(--hero-char-ratio)
+  );
+}
+@keyframes ch-in {
+  from { opacity: 0; transform: perspective(520px) translate3d(0, var(--m-dist-3), 0) rotateX(-42deg); }
+}
+html[data-motion="light"] .hero .hero-name[data-split] .ch { animation-name: ch-in-flat; }
+@keyframes ch-in-flat {
+  from { opacity: 0; transform: translate3d(0, var(--m-dist-2), 0); }
+}
+
+/* ---------- 景深视差（仅首页 / 项目详情） ----------
+   --px 是 JS 写的 0~1 滚动进度；每层行程 = --px × --px-f × --m-parallax，
+   行程越大 = 离眼睛越近。轻量档 --m-parallax=0 → 整体不动。
+   用独立的 translate 属性（不写 transform）：玻璃悬停的 3D 倾斜走 transform，
+   两者分开写才会叠加而不是互相顶掉。
+   只让"层间空隙会变大"的方向错速：竖着排的内容（正文压到指标上）会露馅。 */
+[data-px] {
+  translate: 0 calc(var(--px, 0) * var(--px-f, 0) * var(--m-parallax) * -1px);
+}
 
 /* 向下探索提示 */
 .scroll-cue {
   display: flex;
+  --px-f: 12;
   width: fit-content;
   margin: 24px auto 0;
   align-items: center;
@@ -1327,7 +1377,7 @@ html[data-theme="dark"] .ic-gold { color: #F3BE49; }
 .footer-sep { width: 1px; height: 14px; background: var(--line); }
 
 /* ---------- 页面头部（二级页） ---------- */
-.page-head { padding-top: 48px; }
+.page-head { --px-f: 32; padding-top: 48px; }
 
 .backlink {
   display: inline-flex;
@@ -2000,7 +2050,9 @@ html.gx-on .hero-card:hover, html.gx-on .skill-card:hover, html.gx-on .contact-c
 
 @media (max-width: 760px) {
   .container { width: min(var(--wrap), 100% - 32px); }
-  .hero-card { grid-template-columns: 1fr; }
+  .hero-card { grid-template-columns: 1fr; --px-f: 24; }
+  .scroll-cue { --px-f: 8; }
+  .page-head { --px-f: 20; }
   .hero-disc { order: -1; width: 118px; }
   .grid-2, .grid-3, .grid-4, .grid-auto { grid-template-columns: 1fr; }
   .section { margin-top: 64px; }
