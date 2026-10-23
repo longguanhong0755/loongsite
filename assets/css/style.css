@@ -254,7 +254,6 @@ html[data-theme="dark"]::after { mix-blend-mode: screen; }
   display: block;
   pointer-events: none;
   opacity: 1;
-  transition: opacity var(--m-dur-3) var(--ease-soft);
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0.35));
   -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0.35));
 }
@@ -1979,39 +1978,62 @@ html.js .reveal.is-in.no-rise { animation: none; }
 .site-name { text-wrap: balance; }
 .section-title { letter-spacing: -0.02em; }
 
-/* ---------- 跨页过渡（Chromium 渐进增强）：只有整页淡化，文字零位移 ----------
+/* ---------- 跨页过渡（渐进增强）：整页单层淡化，文字/导航零位移 ----------
    一次换页只允许动 opacity。整页 translate/scale、标题单独飞行、卡片放大
    都会把文字烘焙成快照再重采样；新旧两层文字叠在一起就是抖动/重影。
    关系化效果（方向滑动 / 共享元素 morph）已移除：它们必须移动或缩放文字，
-   与"丝滑"目标冲突。导航条继续单独命名，保持像素级不动。 */
+   与"丝滑"目标冲突。
+   导航条也不再单独命名：旧导航一隐藏、新导航一出现，玻璃背板会在过渡第一帧
+   整块换成新页底色，看起来就是顶部闪一下。并回整页淡化后只有一层。 */
 @view-transition { navigation: auto; }
 
-.nav { view-transition-name: site-nav; }
+/* 过渡背板：快照的圆角/玻璃边缘是透明的，默认会露出浏览器画布（浅色下就是
+   白底）。垫上当前主题底色，透明处也只会看到页面自己的背景。 */
+::view-transition { background: var(--bg); }
 
 /* 旧页保持不动到过渡结束；只让新页淡入。两层同时半透明会露出背景发灰。
    root 组也不做位置/尺寸插值，避免滚动条或视口差异带来整页微移。 */
 ::view-transition-group(root) { animation: none; }
-::view-transition-old(*) { animation: none; }
+::view-transition-old(root) { animation: none; opacity: 1; }
 ::view-transition-new(root) { animation: vt-fade-in var(--m-dur-2) var(--ease-soft) both; }
 @keyframes vt-fade-in { from { opacity: 0; } }
 
-/* 导航栏不参与淡化。与上面同特异度，必须写在后面才压得住 */
-::view-transition-group(site-nav),
-::view-transition-old(site-nav),
-::view-transition-new(site-nav) { animation: none; }
-/* 导航玻璃半透明，旧快照会把旧的活动底板透出来；直接隐藏旧快照 */
-::view-transition-old(site-nav) { opacity: 0; }
-
 /* 到达窗口内禁止平滑滚动：浏览器恢复滚动位置/锚点跳转不能在落位后再滚一段。
-   同时先藏起随机粒子——两套不同种子的粒子图直接叠化会闪；过渡结束后淡入。 */
+   粒子层不躲：两层快照都带着同一套粒子，叠化时不会出现"先消失再淡入"的背景闪。 */
 html.vt-boot { scroll-behavior: auto; }
-html.vt-boot .bg-fx { opacity: 0; }
 
-/* 主题切换：圆形揭示由 WAAPI 驱动。换肤时关掉 root 的默认淡入，并让导航
-   回到 root 快照里一起被圆形裁剪（独立快照不受 clip 影响，会先在旧页上露出新色）。
-   必须写在跨页淡化规则之后，否则同特异度会被盖掉。 */
-html.vt-theme::view-transition-new(root) { animation: none; }
-html.vt-theme .nav { view-transition-name: none; }
+/* 主题切换：圆形揭示由 CSS 动画驱动（不依赖 WAAPI 的 pseudoElement，
+   Safari 也能完整跑）。圆心/半径由 JS 写在 <html> 的 --vt-* 变量上；
+   动画只改 clip-path，不动页面内容。 */
+html.vt-theme::view-transition-new(root) {
+  animation: vt-theme-reveal var(--m-dur-3) var(--ease-soft) both;
+}
+@keyframes vt-theme-reveal {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0%)); }
+  to { clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 0%)); }
+}
+
+/* ---------- 跨页兜底遮罩（不支持跨文档 VT 的浏览器） ----------
+   原生 View Transition 不可用时，点击站内链接先把页面淡到当前主题底色，
+   新页首帧再由同一层遮罩淡出。不会出现白闪，也不动文字位置。 */
+.page-veil {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+}
+html.vt-fallback .page-veil,
+html.page-enter .page-veil { display: block; }
+html.vt-fallback .page-veil { transition: opacity var(--m-dur-1) var(--ease-soft); }
+html.vt-fallback .page-veil.is-on { opacity: 1; }
+html.page-enter .page-veil { opacity: 1; animation: veil-out var(--m-dur-2) var(--ease-soft) both; }
+@keyframes veil-out { to { opacity: 0; } }
+
+/* 系统减弱动态效果时仍走原生淡化（时长由轻量档令牌缩短）；
+   不支持跨文档 VT 的浏览器由上面的遮罩兜底。 */
 
 
 /* ---------- 玻璃悬停（GX v3）：一束全局光 + 玻璃显影 + 棱边 + 轻微倾斜 ---------- */

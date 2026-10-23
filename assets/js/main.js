@@ -70,6 +70,10 @@
       },
       tier: function () { return root.getAttribute('data-motion') === 'light' ? 'light' : 'full'; },
       isFull: function () { return root.getAttribute('data-motion') !== 'light'; },
+      /* 为什么是这个档位：query / stored / reduced-motion / network / low-cores /
+         low-memory / default。排查"动效怎么变轻了"时先看这个。 */
+      reason: function () { return root.getAttribute('data-motion-why') || 'default'; },
+      status: function () { return { tier: this.tier(), reason: this.reason() }; },
       dur: function (slot) { return Math.round(num('dur-' + slot) * 1000); },     /* ms，给 WAAPI */
       dist: function (slot) { return num('dist-' + slot); },                       /* px */
       stagger: function () { return num('stagger'); },                            /* s，逐项错峰步长 */
@@ -78,6 +82,7 @@
     };
   })();
   window.LSMotion = Motion;
+  try { console.info('[loongsite] 动效档位：' + Motion.tier() + '（' + Motion.reason() + '）'); } catch (e) {}
 
   /* 跨页过渡不再在点击时做关系判断：只有整页淡化。
      以前这里会写 sessionStorage、给卡片动态挂共享元素名，旧页标题因此被单独抠成
@@ -210,8 +215,63 @@
     window.addEventListener('blur', onCancel);
   })();
 
+  /* 跨页淡化兜底：不支持跨文档 View Transition（当前主要是 Firefox）时，
+     点击站内链接先把整页淡到主题底色，新页再由同一层遮罩淡出。
+     只接管普通左键、同源、非新标签页的链接；原生 VT 可用时完全不介入。
+     ?vt=off 只给验收脚本强制走兜底用。 */
+  (function () {
+    var native = false;
+    try {
+      native = ('onpageswap' in window)
+        || !!(window.CSS && window.CSS.supports && window.CSS.supports('at-rule(@view-transition)'));
+    } catch (e) {}
+    var forceOff = /[?&]vt=off/.test(location.search);
+    if (native && !forceOff) return;
+    if (forceOff) {
+      /* 测试路径：显式让本页退出原生跨文档过渡 */
+      var kill = document.createElement('style');
+      kill.textContent = '@view-transition { navigation: none; }';
+      document.head.appendChild(kill);
+    }
+    var veil = document.querySelector('.page-veil');
+    if (!veil) return;
+    root.classList.add('vt-fallback');
+    var leaving = false;
+    function jump(url) {
+      try { location.href = url; } catch (e) {}
+    }
+    document.addEventListener('click', function (e) {
+      if (leaving || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (root.classList.contains('nav-dragging')) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+      var url;
+      try { url = new URL(a.href, location.href); } catch (err) { return; }
+      if (url.origin !== location.origin) return;
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+      if (url.pathname === location.pathname && url.search === location.search) return;
+      e.preventDefault();
+      leaving = true;
+      try { sessionStorage.setItem('ls-nav', '1'); } catch (err) {}
+      veil.classList.add('is-on');
+      var jumped = false;
+      function go() {
+        if (jumped) return;
+        jumped = true;
+        jump(url.href);
+      }
+      veil.addEventListener('transitionend', go, { once: true });
+      window.setTimeout(go, Motion.dur(1) + 60);
+    });
+    window.addEventListener('pageshow', function (e) {
+      if (!e.persisted) return;
+      leaving = false;
+      veil.classList.remove('is-on');
+    });
+  })();
+
   /* 主题切换：从主题按钮位置做整页圆形揭示（View Transition）。
-     旧页面先冻结成快照，换主题后用 520ms 的 clip-path 圆揭开新页面；
+     旧页面先冻结成快照，换主题后用 --m-dur-3 的 clip-path 圆揭开新页面；
      换肤期间 <html> 带 .vt-theme，悬停熄灯逻辑会跳过（浮层会伪造 pointerleave）。
      这是本站点名的效果，与背景粒子/头像涟漪一致：不因系统"减弱动态效果"跳过。
      连续点击用 run 令牌保证只有最后一场能摘掉 .vt-theme；
@@ -237,6 +297,11 @@
     var far = Math.sqrt(Math.max(x, window.innerWidth - x) * Math.max(x, window.innerWidth - x)
       + Math.max(y, window.innerHeight - y) * Math.max(y, window.innerHeight - y));
     var run = ++themeRun;
+    /* 圆形揭示的圆心/半径交给 CSS 关键帧；WAAPI 的 pseudoElement 在部分
+       WebKit 版本不可用，会导致换肤变成硬切。 */
+    root.style.setProperty('--vt-x', x + 'px');
+    root.style.setProperty('--vt-y', y + 'px');
+    root.style.setProperty('--vt-r', far + 'px');
     root.classList.add('vt-theme');
     var tr;
     try {
@@ -264,12 +329,6 @@
     }, 4000);
     tr.ready.then(function () {
       if (run !== themeRun || settled) return;
-      try {
-        root.animate(
-          { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + far + 'px at ' + x + 'px ' + y + 'px)'] },
-          { duration: 520, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)', pseudoElement: '::view-transition-new(root)' }
-        );
-      } catch (e) {}
       window.clearTimeout(guard);
       guard = window.setTimeout(function () {
         if (run !== themeRun || settled) return;
@@ -1878,9 +1937,6 @@
 
     function render(now) {
       raf = window.requestAnimationFrame(render);
-      /* 到达窗口内粒子层是隐藏的（CSS opacity:0），别再空转推进：
-         快照里没有粒子，结束后从同一帧淡入，避免背景星空突然跳位。 */
-      if (root.classList.contains('vt-boot')) { last = now; return; }
       if (last && now - last < FRAME_MS) return;   /* 30fps 节流（跳过时不产生画布更新） */
       var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
       last = now;
@@ -2027,7 +2083,9 @@
       if (!ev.relatedTarget) { ptr.x = -1e4; ptr.y = -1e4; }
     });
 
-    raf = window.requestAnimationFrame(render);
+    /* 先同步画一帧再进入 rAF 循环：跨页快照发生在首绘附近，若画布还是空的，
+       快照里就没有粒子，落位后粒子突然出现会被看成"闪一下"。 */
+    render(performance.now());
   })();
 
   /* 头像盘：3D 倾斜 + 边缘水波纹（用户点名效果）。

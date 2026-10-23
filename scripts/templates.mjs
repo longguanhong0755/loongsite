@@ -145,19 +145,20 @@ const NAV = [
   { href: '/blog/', label: '博客', icon: 'pen' }
 ];
 
-const NO_FLASH = `(function(){var d=document.documentElement;d.classList.add('js');try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','light');}})();`;
+const NO_FLASH = `(function(){var d=document.documentElement;d.classList.add('js');try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}d.setAttribute('data-theme',t);}catch(e){d.setAttribute('data-theme','light');}try{if(sessionStorage.getItem('ls-nav')==='1'){sessionStorage.removeItem('ls-nav');d.classList.add('page-enter');}}catch(e){}})();`;
 
 /* 动效分级必须在首绘前定档：CSS 的 --m-* 令牌按 html[data-motion] 取值，
    晚一步首屏就会用错一档（看到完整动效再突然变轻）。
    light 不是关掉效果：时长更短、位移更小、视差关掉，签名效果照样在。
    判据只取"明确的约束"，不拿普通笔记本的 4 核 / 4GB 当理由降级：
      系统减动效 → light；省流量或 2G-慢网 → light；核心数 ≤2 或内存 ≤2GB → light；
-   ?motion=full|light 人工覆盖并记住（localStorage）。 */
-const MOTION = `(function(){var d=document.documentElement,t='full';try{var q=(location.search.match(/[?&]motion=(full|light)/)||[])[1];if(q){t=q;try{localStorage.setItem('motion',q);}catch(e){}}else{var s=null;try{s=localStorage.getItem('motion');}catch(e){}if(s==='full'||s==='light'){t=s;}else if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){t='light';}else{var n=navigator,c=n.connection||{};var weak=!!c.saveData||/^(slow-2g|2g)$/.test(c.effectiveType||'')||!!(n.hardwareConcurrency&&n.hardwareConcurrency<=2)||!!(n.deviceMemory&&n.deviceMemory<=2);if(weak){t='light';}}}}catch(e){t='full';}d.setAttribute('data-motion',t);})();`;
+   ?motion=full|light 人工覆盖并记住（localStorage）。
+   data-motion-why 记录判定原因，控制台/验收脚本可以直接看到为什么降档。 */
+const MOTION = `(function(){var d=document.documentElement,t='full',w='default';try{var q=(location.search.match(/[?&]motion=(full|light)/)||[])[1];if(q){t=q;w='query';try{localStorage.setItem('motion',q);}catch(e){}}else{var s=null;try{s=localStorage.getItem('motion');}catch(e){}if(s==='full'||s==='light'){t=s;w='stored';}else if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){t='light';w='reduced-motion';}else{var n=navigator,c=n.connection||{};if(!!c.saveData||/^(slow-2g|2g)$/.test(c.effectiveType||'')){t='light';w='network';}else if(!!(n.hardwareConcurrency&&n.hardwareConcurrency<=2)){t='light';w='low-cores';}else if(!!(n.deviceMemory&&n.deviceMemory<=2)){t='light';w='low-memory';}}}}catch(e){t='full';w='error';}d.setAttribute('data-motion',t);d.setAttribute('data-motion-why',w);})();`;
 
 /* 到达编排必须在内联脚本里注册：defer 的 main.js 可能晚于跨页快照执行，
    那样 pagereveal 里的首屏标记会错过首帧，快照就是空白。这里只负责把首屏块
-   标成"已就位、不重放入场"，并给到达窗口加锁（禁止平滑滚动、藏起随机粒子）。
+   标成"已就位、不重放入场"，并给到达窗口加锁（禁止平滑滚动）。
    整页动作只有 ::view-transition-new(root) 的 opacity 淡入——不写 translate，
    任何第二段位移都会让文字重采样、看起来发抖。 */
 const ARRIVAL = `(function(){var d=document.documentElement;function done(){d.classList.remove('vt-boot');}window.addEventListener('pagereveal',function(e){if(!e||!e.viewTransition||d.classList.contains('vt-theme'))return;d.classList.add('vt-active','vt-boot');var vh=window.innerHeight*0.94,list=document.querySelectorAll('.reveal');for(var i=0;i<list.length;i++){var el=list[i],r=el.getBoundingClientRect();if(r.height&&(Math.min(r.bottom,vh)-Math.max(r.top,0))/r.height>=0.04){el.classList.add('is-in','no-rise');}}try{e.viewTransition.finished.then(done,done);}catch(err){}setTimeout(done,1200);},{once:true});})();`;
@@ -192,6 +193,7 @@ export function layout({ profile, title, description, current = '/', path = '/',
 <script type="speculationrules">{"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/sub/*"}}]},"eagerness":"moderate"}]}</script>
 </head>
 <body class="${bodyClass}">
+<div class="page-veil" aria-hidden="true"></div>
 ${REFRACT_SVG}
 <a class="skip-link" href="#main">跳到主要内容</a>
 <div class="bg-deco" aria-hidden="true"></div>

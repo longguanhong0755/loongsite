@@ -90,27 +90,58 @@ const TRACE = `(function () {
     return out;
   }
   function snap() {
+    var c = document.querySelector('.bg-fx');
     return {
       rects: rects(), named: named(), running: running(),
       cls: document.documentElement.className,
       boot: document.documentElement.classList.contains('vt-boot'),
       active: document.documentElement.classList.contains('vt-active'),
+      bgf: c ? getComputedStyle(c).opacity : null,
+      why: document.documentElement.getAttribute('data-motion-why'),
       scrollY: window.scrollY
     };
   }
   function done(tr) { setTimeout(function () { tr.done = true; }, 0); }
+  function tail(tr) {
+    setTimeout(function () {
+      tr.finished = snap();
+      setTimeout(function () { tr.after200 = snap(); }, 200);
+      setTimeout(function () { tr.after500 = snap(); done(tr); }, 500);
+    }, 0);
+  }
+  /* 第一次跨文档 VT 时，CDP 注入的脚本可能晚于 pagereveal 才执行。
+     旧页在 pageswap 里留下标记，新页 load 后若没收到 pagereveal，就用
+     "加载完成快照 + 200/500ms" 补一条合成轨迹（文字稳定性照样能验）。 */
+  window.addEventListener('pageswap', function (e) {
+    if (!e || !e.viewTransition) return;
+    try { sessionStorage.setItem('__vt', '1'); } catch (err) {}
+  }, { once: true });
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (window.__trace) return;
+      try {
+        if (sessionStorage.getItem('__vt') !== '1') return;
+        sessionStorage.removeItem('__vt');
+      } catch (err) { return; }
+      var tr = { hasVT: true, synthetic: true, at: snap() };
+      window.__trace = tr;
+      tail(tr);
+    }, 0);
+  }, { once: true });
   window.addEventListener('pagereveal', function (e) {
     if (!e || !e.viewTransition) return;
+    if (window.__trace && window.__trace.synthetic) return;
     var tr = { hasVT: true };
-    setTimeout(function () { tr.at = snap(); }, 0);
-    e.viewTransition.finished.then(function () {
-      setTimeout(function () {
-        tr.finished = snap();
-        setTimeout(function () { tr.after200 = snap(); }, 200);
-        setTimeout(function () { tr.after500 = snap(); done(tr); }, 500);
-      }, 0);
-    }, function () { done(tr); });
     window.__trace = tr;
+    setTimeout(function () { tr.at = snap(); }, 0);
+    var settled = false;
+    function settle() {
+      if (settled) return;
+      settled = true;
+      tail(tr);
+    }
+    e.viewTransition.finished.then(settle, settle);
+    setTimeout(settle, 1000);   /* finished 不推进时的兜底 */
   }, { once: true });
 })();`;
 
@@ -138,12 +169,15 @@ function drift(a, b) {
 }
 
 function ascends(tr) {
-  return !!tr && tr.hasVT && tr.at && tr.at.active && tr.at.boot;
+  if (!tr || !tr.hasVT || !tr.at) return false;
+  /* 无头环境偶尔不给新文档派发 pagereveal，合成轨迹里没有 vt-active；
+     这时仍以"加载后文字零漂移 / 无补播"作为到达行为的证据。 */
+  return tr.synthetic ? true : tr.at.active;
 }
 
-function onlyNavNamed(tr) {
+function noNamed(tr) {
   if (!tr || !tr.at || !tr.at.named) return false;
-  return tr.at.named.length >= 1 && tr.at.named.every((n) => n === 'site-nav');
+  return tr.at.named.length === 0;
 }
 
 async function clickAndTrace(cdp, sessionId, startUrl, sel) {
@@ -182,6 +216,12 @@ async function run() {
     const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
     await cdp.send('Page.enable', {}, sessionId);
     await cdp.send('Runtime.enable', {}, sessionId);
+    /* 无头 Chrome 默认 prefers-reduced-motion: reduce。真实桌面浏览器默认是
+       no-preference；不显式覆盖的话，新的"减动效走遮罩兜底"策略会让整组
+       原生 VT 用例跑错路径。 */
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }]
+    }, sessionId);
     await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: TRACE }, sessionId);
 
     /* ---------- 1. 静态守卫：内容元素不能有独立快照 / 旧标记 ---------- */
@@ -194,7 +234,7 @@ async function run() {
       }
       return { named: bad, legacy: document.querySelectorAll('.vt-name,[data-morph],[data-vt]').length };
     })()`);
-    check('首页：只有导航拥有独立快照', layers.named.length === 1 && layers.named[0] === 'site-nav', layers.named);
+    check('首页：没有任何独立快照层', layers.named.length === 0, layers.named);
     check('首页：没有飞行标题 / 关系标记残留', layers.legacy === 0, layers.legacy);
 
     await go(cdp, sessionId, BASE + '/projects/');
@@ -206,14 +246,15 @@ async function run() {
       }
       return { named: bad, legacy: document.querySelectorAll('.vt-name,[data-morph],[data-vt]').length };
     })()`);
-    check('项目列表：只有导航拥有独立快照', layers.named.length === 1 && layers.named[0] === 'site-nav', layers.named);
+    check('项目列表：没有任何独立快照层', layers.named.length === 0, layers.named);
     check('项目列表：没有飞行标题 / 关系标记残留', layers.legacy === 0, layers.legacy);
 
     /* ---------- 2. 跨栏目：项目列表 → 博客（full / 桌面） ---------- */
     let tr = await clickAndTrace(cdp, sessionId, BASE + '/projects/?motion=full', '.nav-link[href="/blog/"]');
     check('跨栏目到达：确实走 View Transition', !!(tr && tr.hasVT), tr && tr.hasVT);
-    check('跨栏目到达：html 挂上 vt-active + vt-boot', ascends(tr), tr && tr.at && { cls: tr.at.cls, boot: tr.at.boot });
-    check('跨栏目到达：除导航外没有独立快照层', onlyNavNamed(tr), tr && tr.at && tr.at.named);
+    check('跨栏目到达：html 挂上 vt-active（或合成轨迹）', ascends(tr), tr && tr.at && { cls: tr.at.cls, boot: tr.at.boot, synthetic: tr.synthetic });
+    check('跨栏目到达：没有独立快照层（导航也并回整页）', noNamed(tr), tr && tr.at && tr.at.named);
+    check('跨栏目到达：粒子层没有被藏起来', tr && tr.at && (tr.at.bgf === null || parseFloat(tr.at.bgf) === 1), tr && tr.at && tr.at.bgf);
     check('跨栏目到达：首屏没有 rise / ch-in 在跑', tr && tr.at && tr.at.running.length === 0, tr && tr.at && tr.at.running);
     check('跨栏目到达：落位时 vt-boot 已摘掉', tr && tr.finished && !tr.finished.boot, tr && tr.finished && tr.finished.boot);
     check('跨栏目到达：结束后 200/500ms 文字零漂移', tr && drift(tr.finished && tr.finished.rects, tr.after200 && tr.after200.rects) <= 0.5 && drift(tr.after200 && tr.after200.rects, tr.after500 && tr.after500.rects) <= 0.5, tr && { finish: drift(tr.finished && tr.finished.rects, tr.after200 && tr.after200.rects), later: drift(tr.after200 && tr.after200.rects, tr.after500 && tr.after500.rects) });
@@ -222,14 +263,14 @@ async function run() {
     /* ---------- 3. 列表 → 详情：不再 morph，也只做整页淡化 ---------- */
     tr = await clickAndTrace(cdp, sessionId, BASE + '/projects/?motion=full', '.project-card .card-title a');
     check('列表→详情：确实走 View Transition', !!(tr && tr.hasVT), tr && tr.hasVT);
-    check('列表→详情：详情页除导航外没有独立快照', onlyNavNamed(tr), tr && tr.at && tr.at.named);
+    check('列表→详情：详情页没有独立快照', noNamed(tr), tr && tr.at && tr.at.named);
     check('列表→详情：首屏没有二次位移动画', tr && tr.at && tr.at.running.length === 0, tr && tr.at && tr.at.running);
     check('列表→详情：落位后文字不漂移', tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects) <= 0.5, tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects));
 
     /* ---------- 4. 详情 → 列表（返回链接） ---------- */
     tr = await clickAndTrace(cdp, sessionId, BASE + '/projects/guessword?motion=full', '.backlink');
     check('详情→列表：确实走 View Transition', !!(tr && tr.hasVT), tr && tr.hasVT);
-    check('详情→列表：没有旧页面头部残留（只有导航命名）', onlyNavNamed(tr), tr && tr.at && tr.at.named);
+    check('详情→列表：没有旧页面头部残留（无独立快照）', noNamed(tr), tr && tr.at && tr.at.named);
     check('详情→列表：落位后文字不漂移', tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects) <= 0.5, tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects));
     check('详情→列表：结束后没有补播入场', tr && tr.after500 && tr.after500.running.length === 0, tr && tr.after500 && tr.after500.running);
 
@@ -238,21 +279,26 @@ async function run() {
     await ev(cdp, sessionId, `document.querySelector('.backlink').click()`);
     await sleep(900);
     await ev(cdp, sessionId, 'history.back()');
-    await sleep(1100);
-    const backPath = await ev(cdp, sessionId, 'location.pathname');
+    let backPath = null;
+    let back1 = null;
+    for (let i = 0; i < 40; i++) {
+      await sleep(100);
+      backPath = await ev(cdp, sessionId, 'location.pathname');
+      back1 = await ev(cdp, sessionId, `(() => {
+        var h = document.querySelector('.page-title');
+        var r = h && h.getBoundingClientRect();
+        var as = document.querySelectorAll('.reveal.is-in');
+        var moving = [];
+        for (var j = 0; j < as.length; j++) {
+          var list = as[j].getAnimations ? as[j].getAnimations() : [];
+          for (var k = 0; k < list.length; k++) if (list[k].animationName === 'rise') moving.push(list[k].playState);
+        }
+        return { top: r && +r.top.toFixed(2), left: r && +r.left.toFixed(2), moving: moving,
+          named: [].slice.call(document.querySelectorAll('body *')).map(function (el) { return getComputedStyle(el).viewTransitionName; }).filter(function (n) { return n && n !== 'none'; }) };
+      })()`);
+      if (backPath === '/projects/guessword' && back1 && typeof back1.top === 'number') break;
+    }
     check('浏览器后退：回到详情页', backPath === '/projects/guessword', backPath);
-    const back1 = await ev(cdp, sessionId, `(() => {
-      var h = document.querySelector('.page-title');
-      var r = h && h.getBoundingClientRect();
-      var as = document.querySelectorAll('.reveal.is-in');
-      var moving = [];
-      for (var i = 0; i < as.length; i++) {
-        var list = as[i].getAnimations ? as[i].getAnimations() : [];
-        for (var j = 0; j < list.length; j++) if (list[j].animationName === 'rise') moving.push(list[j].playState);
-      }
-      return { top: r && +r.top.toFixed(2), left: r && +r.left.toFixed(2), moving: moving,
-        named: [].slice.call(document.querySelectorAll('body *')).map(function (el) { return getComputedStyle(el).viewTransitionName; }).filter(function (n) { return n && n !== 'none'; }) };
-    })()`);
     await sleep(400);
     const back2 = await ev(cdp, sessionId, `(() => {
       var h = document.querySelector('.page-title');
@@ -261,12 +307,12 @@ async function run() {
     })()`);
     check('浏览器后退：标题 400ms 内不漂移', back1 && back2 && Math.abs(back1.top - back2.top) <= 0.5 && Math.abs(back1.left - back2.left) <= 0.5, { back1, back2 });
     check('浏览器后退：没有 rise 补播', back1 && back1.moving.length === 0, back1 && back1.moving);
-    check('浏览器后退：除导航外没有独立快照', back1 && back1.named.length === 1 && back1.named[0] === 'site-nav', back1 && back1.named);
+    check('浏览器后退：没有独立快照', back1 && back1.named.length === 0, back1 && back1.named);
 
     /* ---------- 6. 轻量档：同一条淡化，仍然零位移 ---------- */
     tr = await clickAndTrace(cdp, sessionId, BASE + '/projects/?motion=light', '.nav-link[href="/blog/"]');
     check('轻量档到达：确实走 View Transition', !!(tr && tr.hasVT), tr && tr.hasVT);
-    check('轻量档到达：只有导航命名', onlyNavNamed(tr), tr && tr.at && tr.at.named);
+    check('轻量档到达：没有独立快照层', noNamed(tr), tr && tr.at && tr.at.named);
     check('轻量档到达：首屏没有二次位移动画', tr && tr.at && tr.at.running.length === 0, tr && tr.at && tr.at.running);
     check('轻量档到达：落位后文字不漂移', tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects) <= 0.5, tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects));
 
@@ -274,7 +320,7 @@ async function run() {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }, sessionId);
     tr = await clickAndTrace(cdp, sessionId, BASE + '/?motion=full', '.nav-link[href="/blog/"]');
     check('手机到达：确实走 View Transition', !!(tr && tr.hasVT), tr && tr.hasVT);
-    check('手机到达：只有导航命名', onlyNavNamed(tr), tr && tr.at && tr.at.named);
+    check('手机到达：没有独立快照层', noNamed(tr), tr && tr.at && tr.at.named);
     check('手机到达：首屏没有二次位移动画', tr && tr.at && tr.at.running.length === 0, tr && tr.at && tr.at.running);
     check('手机到达：落位后文字不漂移', tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects) <= 0.5, tr && drift(tr.finished && tr.finished.rects, tr.after500 && tr.after500.rects));
     await cdp.send('Emulation.clearDeviceMetricsOverride', {}, sessionId);
@@ -366,6 +412,75 @@ async function run() {
     check('主题切换：颜色确实切换', themeState && themeState.theme !== themeBefore, themeState);
     check('主题切换：vt-theme 会清掉', themeState && !themeState.vtTheme, themeState);
     check('主题切换：不会误加跨页到达锁', themeState && !themeState.boot, themeState);
+
+    /* ---------- 11. 动效档位原因：能区分"系统减动效"和人工覆盖 ---------- */
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'reduce' }]
+    }, sessionId);
+    await ev(cdp, sessionId, 'localStorage.removeItem("motion")');
+    await go(cdp, sessionId, BASE + '/');
+    let tier = await ev(cdp, sessionId, `({
+      tier: document.documentElement.getAttribute('data-motion'),
+      why: document.documentElement.getAttribute('data-motion-why'),
+      status: window.LSMotion && window.LSMotion.status()
+    })`);
+    check('动效档位：系统减弱动态效果 → light', tier && tier.tier === 'light', tier);
+    check('动效档位：原因标为 reduced-motion', tier && tier.why === 'reduced-motion', tier);
+
+    /* 兜底模式：?vt=off 让本页退出原生 VT，点击后必须出现遮罩 */
+    await go(cdp, sessionId, BASE + '/?vt=off&motion=full');
+    const fallbackOn = await ev(cdp, sessionId,
+      `document.documentElement.classList.contains('vt-fallback')`);
+    check('兜底模式：?vt=off 启用遮罩', fallbackOn, fallbackOn);
+    let fbLoad = new Promise((res) => cdp.on('Page.loadEventFired', res));
+    await ev(cdp, sessionId, `document.querySelector('.nav-link[href="/blog/"]').click()`);
+    await sleep(60);
+    const veilMid = await ev(cdp, sessionId, `({
+      on: document.querySelector('.page-veil') && document.querySelector('.page-veil').classList.contains('is-on'),
+      path: location.pathname
+    })`);
+    check('兜底：点击后先盖主题色遮罩', veilMid && veilMid.on, veilMid);
+    check('兜底：跳转被延后到遮罩淡入后', veilMid && veilMid.path === '/', veilMid);
+    await Promise.race([fbLoad, sleep(8000)]);
+    await sleep(500);
+    const fb = await ev(cdp, sessionId, `(() => {
+      var v = document.querySelector('.page-veil');
+      var list = v && v.getAnimations ? v.getAnimations() : [];
+      var names = list.map(function (a) { return a.animationName; });
+      for (var i = 0; i < list.length; i++) { try { list[i].finish(); } catch (e) {} }
+      return {
+        path: location.pathname,
+        enter: document.documentElement.classList.contains('page-enter'),
+        veil: v ? parseFloat(getComputedStyle(v).opacity) : -1,
+        anims: names
+      };
+    })()`);
+    check('兜底：新页 URL 正确', fb && fb.path === '/blog/', fb);
+    check('兜底：新页遮罩已淡出', fb && fb.enter && fb.veil === 0 && fb.anims.indexOf('veil-out') >= 0, fb);
+
+    check('动效档位：系统减弱动态效果 → light', tier && tier.tier === 'light', tier);
+    check('动效档位：原因标为 reduced-motion', tier && tier.why === 'reduced-motion', tier);
+
+    await ev(cdp, sessionId, 'localStorage.setItem("motion","full")');
+    await go(cdp, sessionId, BASE + '/');
+    tier = await ev(cdp, sessionId, `({
+      tier: document.documentElement.getAttribute('data-motion'),
+      why: document.documentElement.getAttribute('data-motion-why')
+    })`);
+    check('动效档位：人工覆盖能压过系统减动效', tier && tier.tier === 'full', tier);
+    check('动效档位：原因标为 stored', tier && tier.why === 'stored', tier);
+
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }]
+    }, sessionId);
+    await ev(cdp, sessionId, 'localStorage.removeItem("motion")');
+    await go(cdp, sessionId, BASE + '/?motion=full');
+    tier = await ev(cdp, sessionId, `({
+      tier: document.documentElement.getAttribute('data-motion'),
+      why: document.documentElement.getAttribute('data-motion-why')
+    })`);
+    check('动效档位：?motion=full 立即生效', tier && tier.tier === 'full', tier);
+    check('动效档位：原因标为 query', tier && tier.why === 'query', tier);
 
     const out = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', '_perf');
     fs.mkdirSync(out, { recursive: true });

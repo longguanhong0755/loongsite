@@ -147,36 +147,70 @@ if (i0 === -1 || i1 === -1) {
   }
 }
 
-/* ---------- 5. 跨页过渡不变量：只允许整页 opacity 淡化 ----------
-   文字一旦被快照后再平移/缩放就会重采样；命名内容元素还会留下旧标题残影。
-   这里把"除导航外不许有独立快照、root 不许位移"锁进源码门禁。 */
+/* ---------- 5. 跨页过渡不变量：整页只有一层 opacity 淡化 ----------
+   文字一旦被快照后再平移/缩放就会重采样；任何命名内容元素还会留下旧标题残影。
+   导航条单独命名会让玻璃背板在过渡第一帧整块换成新页底色（顶部闪一下），
+   所以这里锁死"没有任何 view-transition-name"，只留 root 的一层淡化。 */
 const vtn = [];
 root.walkDecls('view-transition-name', (d) => {
   const sel = d.parent.selector.replace(/\s+/g, ' ').trim();
   vtn.push(`${sel}=${d.value}`);
 });
-expect('[过渡] 只允许导航拥有独立快照', vtn.sort().join(' | '), '.nav=site-nav | html.vt-theme .nav=none');
+expect('[过渡] 页面不得给任何元素独立快照', vtn.sort().join(' | '), '');
 
 const legacySel = [];
 root.walkRules((r) => {
-  if (/vt-name|data-vt-|vt-arrive|vt-settle|vt-morph|vt-dir/.test(r.selector)) legacySel.push(r.selector);
+  if (/site-nav|vt-name|data-vt-|vt-arrive|vt-settle|vt-morph|vt-dir/.test(r.selector)) legacySel.push(r.selector);
 });
-expect('[过渡] 不得再有飞行标题 / 方向 / morph 规则', legacySel.join(' | '), '');
+expect('[过渡] 不得再有导航独立层 / 飞行标题 / 方向 / morph 规则', legacySel.join(' | '), '');
 
 const rootNew = declMap.get('::view-transition-new(root)');
 expect('[过渡] 新页 root 只做令牌化淡入', rootNew && rootNew.get('animation'), 'vt-fade-in var(--m-dur-2) var(--ease-soft) both');
+const rootOld = declMap.get('::view-transition-old(root)');
+expect('[过渡] 旧页保持不透明、不淡出', rootOld && `${rootOld.get('animation')}|${rootOld.get('opacity')}`, 'none|1');
 const rootGroup = declMap.get('::view-transition-group(root)');
 expect('[过渡] root 组不做位置/尺寸插值', rootGroup && rootGroup.get('animation'), 'none');
+const vtBackdrop = declMap.get('::view-transition');
+expect('[过渡] 过渡背板用当前主题底色，透明处不露白', vtBackdrop && vtBackdrop.get('background'), 'var(--bg)');
+const themeNew = declMap.get('html.vt-theme::view-transition-new(root)');
+expect('[过渡] 主题揭示用 CSS clip-path 动画', themeNew && themeNew.get('animation'), 'vt-theme-reveal var(--m-dur-3) var(--ease-soft) both');
+expect('[过渡] 主题揭示不依赖 WAAPI pseudoElement', /pseudoElement\s*:/.test(js), false);
+let bgHidden = false;
+root.walkRules((r) => {
+  if (!/\.bg-fx/.test(r.selector)) return;
+  r.walkDecls('opacity', (d) => { if (parseFloat(d.value) === 0) bgHidden = true; });
+});
+expect('[过渡] 粒子层不得在到达窗口隐藏', bgHidden, false);
+
+/* 兜底遮罩：不支持跨文档 VT / 系统减动效时走这里 */
+const veil = declMap.get('.page-veil');
+expect('[过渡] 兜底遮罩默认不渲染、不挡点击', veil && `${veil.get('display')}|${veil.get('opacity')}|${veil.get('pointer-events')}`, 'none|0|none');
+const veilOn = declMap.get('html.vt-fallback .page-veil, html.page-enter .page-veil');
+expect('[过渡] 兜底遮罩只在兜底/到达时显示', veilOn && veilOn.get('display'), 'block');
+const veilIn = declMap.get('html.page-enter .page-veil');
+expect('[过渡] 新页兜底遮罩自动淡出', veilIn && veilIn.get('animation'), 'veil-out var(--m-dur-2) var(--ease-soft) both');
+const vtNav = [];
+root.walkAtRules('view-transition', (at) => {
+  at.walkDecls('navigation', (d) => vtNav.push(d.value));
+});
+expect('[过渡] 原生 VT 默认开启', vtNav.sort().join('|'), 'auto');
+expect('[过渡] 兜底逻辑只在无 VT 时启用', /vt-fallback/.test(js) && /ls-nav/.test(js), true);
+expect('[过渡] 每页都有兜底遮罩节点', /class="page-veil"/.test(readFileSync(path.join(ROOT, 'index.html'), 'utf8')), true);
 
 let fade = null;
+let themeReveal = null;
 const legacyKf = [];
 root.walkAtRules('keyframes', (at) => {
   if (at.params === 'vt-fade-in') fade = at;
+  else if (at.params === 'vt-theme-reveal') themeReveal = at;
   else if (/^vt-(page|morph|in-|out-)/.test(at.params)) legacyKf.push(at.params);
 });
 const fadeDecls = [];
 if (fade) fade.walkDecls((d) => fadeDecls.push(`${d.prop}:${d.value}`));
 expect('[过渡] vt-fade-in 只改 opacity', fadeDecls.join(' | '), 'opacity:0');
+const themeDecls = [];
+if (themeReveal) themeReveal.walkDecls((d) => themeDecls.push(d.prop));
+expect('[过渡] vt-theme-reveal 只改 clip-path', themeDecls.join('|'), 'clip-path|clip-path');
 expect('[过渡] 不得再有位移动画关键帧', legacyKf.join(' | '), '');
 
 const legacyMarks = [

@@ -8,7 +8,7 @@ npm run serve     # http://127.0.0.1:8090
 
 ```bash
 npm run test:tier       # P0 分级            28 条
-npm run test:route      # 跨页丝滑验收       42 条
+npm run test:route      # 跨页丝滑验收       56 条
 npm run test:depth      # P2 首屏/视差       28 条
 npm run test:interact   # P3 GX/微交互       35 条
 npm run test:blog       # P4 阅读环/目录     19 条
@@ -31,9 +31,18 @@ npm run perf:light      # 性能（轻量档）
 - **剪贴板**：复制测试需要 `Browser.grantPermissions` 授权。
 - **跨文档导航**：`Performance` 计数器会重置，导航场景的每帧成本记为 `null`（只测帧/长任务）。
 - **跨页过渡的帧在 headless 里不推进**：跨页验收不靠逐帧截图，而是分三个时间点读 DOM：
-  `pagereveal` 时检查“除导航外没有独立快照 / 首屏没有 rise 在跑 / vt-boot 已挂”，
+  `pagereveal` 时检查“没有任何独立快照 / 首屏没有 rise 在跑 / 粒子层没被藏”，
   `viewTransition.finished` +200/500ms 检查标题与正文矩形是否漂移（阈值 0.5px）。
   这样即使过渡动画停在第一帧，也能证明文字没有被第二层移动。
+- **headless 偶尔不给新文档派发 `pagereveal`**：旧页 `pageswap` 会留下标记，新页 load 后
+  没有探针时改用“加载完成 + 200/500ms”的合成轨迹；文字零漂移与无补播仍然有效，
+  只有 `vt-active` 标记在合成轨迹里跳过。
+- **导航也并回整页淡化**：旧版本给 `.nav` 单独命名，旧导航隐藏、新导航第一帧整块出现，
+  玻璃背板会瞬间换成新页底色。现在页面里 `view-transition-name` 数量为 0。
+- **不支持跨文档 VT 的浏览器**（Firefox 等）走 `.page-veil` 兜底：点击同源链接先把整页
+  淡到主题底色，新页首帧再由同一层遮罩淡出；`?vt=off` 可在 Chromium 里强制走这条路径。
+- **档位原因**：页面把判定原因写在 `data-motion-why`（query / stored / reduced-motion /
+  network / low-cores / low-memory / default），跨页验收会分别模拟系统减动效和人工覆盖。
 
 ## 性能口径
 
